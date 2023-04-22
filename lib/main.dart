@@ -1,3 +1,4 @@
+import 'model.dart';
 import 'widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
@@ -47,5 +48,5 @@ void main() async {
 			db.execute(query.toString());
 		}
 	);
-	runApp(App(db));
+	runApp(App(Model(db)));
 }
