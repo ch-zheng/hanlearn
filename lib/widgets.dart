@@ -62,6 +62,7 @@ class _StudyPageState extends State<StudyPage>
 	with AutomaticKeepAliveClientMixin<StudyPage> {
 	var flashcards = <Flashcard>[];
 	int flashcardIndex = 0;
+	bool flashcardShown = false;
 	final pageController = PageController();
 	drawFlashcards() {
 		widget.model.drawFlashcards(10).then(
@@ -80,22 +81,50 @@ class _StudyPageState extends State<StudyPage>
 			flashcards[flashcardIndex]
 			: Flashcard('', '', '');
 		final result = Column(children: [
-			Expanded(child: PageView.builder(
-				controller: pageController,
-				onPageChanged: (value) => setState(() => flashcardIndex = value),
-				itemBuilder: (context, index) => Center(child: Padding (
-					padding: const EdgeInsets.fromLTRB(32, 64, 32, 32),
-					child:  Card(child: Center(child: Text(
-						index < flashcards.length ? flashcards[index].item : '',
-						style: TextStyle(
-							color: (Theme.of(context).textTheme.titleLarge as TextStyle).color as Color,
-							fontSize: 64,
-							fontWeight: FontWeight.bold
-						),
-						textAlign: TextAlign.center
-					)))
-				)),
-				itemCount: flashcards.length
+			Expanded(child: GestureDetector(
+				onTap: () => setState(() => flashcardShown = !flashcardShown),
+				child: PageView.builder(
+					controller: pageController,
+					onPageChanged: (value) => setState(() {
+						flashcardIndex = value;
+						flashcardShown = false;
+					}),
+					itemBuilder: (context, index) {
+						Widget cardContents;
+						if (index != flashcardIndex || !flashcardShown) {
+							cardContents = Text(
+								key: UniqueKey(),
+								flashcards[index].item,
+								style: TextStyle(
+									color: (Theme.of(context).textTheme.titleLarge as TextStyle).color as Color,
+									fontSize: 64,
+									fontWeight: FontWeight.bold
+								),
+								textAlign: TextAlign.center
+							);
+						} else {
+							//TODO: Proper contents
+							cardContents = Text(
+								flashcard.pinyin,
+								key: UniqueKey(),
+								style: TextStyle(
+									color: (Theme.of(context).textTheme.titleLarge as TextStyle).color as Color,
+									fontSize: 64,
+									fontWeight: FontWeight.bold
+								),
+								textAlign: TextAlign.center
+							);
+						}
+						return Center(child: Padding (
+							padding: const EdgeInsets.fromLTRB(32, 64, 32, 32),
+							child: Card(child: Center(child: AnimatedSwitcher(
+								duration: const Duration(milliseconds: 100),
+								child: cardContents
+							)))
+						));
+					},
+					itemCount: flashcards.length
+				)
 			)),
 			Text(
 				'${flashcardIndex+1} / ${flashcards.length}',
