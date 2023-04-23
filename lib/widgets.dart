@@ -1,31 +1,53 @@
 import 'model.dart';
 import 'package:flutter/material.dart';
+import 'dart:math';
 
-class App extends StatelessWidget {
+class App extends StatefulWidget {
 	final Model model;
 	const App(this.model, {super.key});
 	@override
+	State<App> createState() => _AppState();
+}
+
+class _AppState extends State<App>
+	with SingleTickerProviderStateMixin {
+	int navigationIndex = 0;
+	late TabController tabController;
+	@override
+	void initState() {
+		super.initState();
+		tabController = TabController(length: 2, vsync: this);
+	}
+	@override
+	void dispose() {
+		tabController.dispose();
+		super.dispose();
+	}
+	@override
 	Widget build(BuildContext context) => MaterialApp(
-		title: 'Beihanzi',
-		theme: ThemeData.dark(),
-		home: DefaultTabController(
-			length: 2,
-			child: Scaffold(
-				bottomNavigationBar: const BottomAppBar(
-					child: TabBar(tabs: [
-						Tab(text: 'Study', icon: Icon(Icons.book)),
-						Tab(text: 'Vocabulary', icon: Icon(Icons.list))
-					])
-				),
-				body: TabBarView(
-					physics: const NeverScrollableScrollPhysics(),
-					children: [
-						StudyPage(model, key: const ValueKey('study')),
-						const VocabularyPage(key: ValueKey('vocab'))
-					]
-				)
+		title: 'Hanlearn',
+		theme: ThemeData.dark(useMaterial3: true),
+		home: Scaffold(
+			bottomNavigationBar: NavigationBar(
+				selectedIndex: navigationIndex,
+				destinations: const [
+					NavigationDestination(icon: Icon(Icons.book), label: 'Study'),
+					NavigationDestination(icon: Icon(Icons.list), label: 'Vocabulary')
+				],
+				onDestinationSelected: (index) => setState(() {
+					navigationIndex = index;
+					tabController.animateTo(index);
+				})
+			),
+			body: TabBarView(
+				controller: tabController,
+				physics: const NeverScrollableScrollPhysics(),
+				children: [
+					StudyPage(widget.model),
+					VocabularyPage(widget.model)
+				]
 			)
-		),
+		)
 	);
 }
 
@@ -39,46 +61,46 @@ class StudyPage extends StatefulWidget {
 class _StudyPageState extends State<StudyPage> 
 	with AutomaticKeepAliveClientMixin<StudyPage> {
 	var flashcards = <Flashcard>[];
-	int flashcardIndex = 0, sliderValue = 1;
+	int flashcardIndex = 0;
 	final pageController = PageController();
+	drawFlashcards() {
+		widget.model.drawFlashcards(10).then(
+			(value) => setState(() => flashcards = value)
+		);
+	}
+	@override
+	initState() {
+		super.initState();
+		drawFlashcards();
+	}
 	@override
 	Widget build(BuildContext context) {
 		super.build(context);
-		return Column(children: [
-			Expanded(child: GestureDetector(
-				child: Stack(children: [
-					PageView.builder(
-						controller: pageController,
-						onPageChanged: (value) => setState(() => flashcardIndex = value),
-						itemBuilder: (context, index) => Center(child: Padding (
-							padding: const EdgeInsets.symmetric(horizontal: 32),
-							child: Text(
-								index < flashcards.length ? flashcards[index].item : '',
-								style: const TextStyle(
-									color: Colors.lightBlueAccent,
-									fontSize: 64,
-									fontWeight: FontWeight.bold
-								),
-								textAlign: TextAlign.center
-							)
-						)),
-						itemCount: flashcards.length
-					),
-					Positioned(
-						bottom: 0,
-						right: 0,
-						child: Padding(
-							padding: const EdgeInsets.only(right: 32),
-							child: Row(children: const [
-								Text('20'),
-								Icon(Icons.local_fire_department)
-							])
-						)
-					)
-				]),
-				//TODO: Tap detection
+		final flashcard = flashcards.isNotEmpty ?
+			flashcards[flashcardIndex]
+			: Flashcard('', '', '');
+		final result = Column(children: [
+			Expanded(child: PageView.builder(
+				controller: pageController,
+				onPageChanged: (value) => setState(() => flashcardIndex = value),
+				itemBuilder: (context, index) => Center(child: Padding (
+					padding: const EdgeInsets.fromLTRB(32, 64, 32, 32),
+					child:  Card(child: Center(child: Text(
+						index < flashcards.length ? flashcards[index].item : '',
+						style: TextStyle(
+							color: (Theme.of(context).textTheme.titleLarge as TextStyle).color as Color,
+							fontSize: 64,
+							fontWeight: FontWeight.bold
+						),
+						textAlign: TextAlign.center
+					)))
+				)),
+				itemCount: flashcards.length
 			)),
-			Text('${flashcardIndex+1}/${flashcards.length}'),
+			Text(
+				'${flashcardIndex+1} / ${flashcards.length}',
+				style: Theme.of(context).textTheme.labelLarge as TextStyle
+			),
 			const Divider(),
 			Padding(
 				padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -87,7 +109,7 @@ class _StudyPageState extends State<StudyPage>
 						FractionallySizedBox(
 							widthFactor: 1,
 							child: ElevatedButton.icon(
-								onPressed: () => 0,
+								onPressed: () => 0, //TODO
 								icon: const Icon(Icons.thumb_up),
 								label: const Text('Recalled')
 							)
@@ -95,40 +117,51 @@ class _StudyPageState extends State<StudyPage>
 						FractionallySizedBox(
 							widthFactor: 1,
 							child: ElevatedButton.icon(
-								onPressed: () => 0,
+								onPressed: () => 0, //TODO
 								icon: const Icon(Icons.thumb_down),
 								label: const Text('Forgot')
 							)
 						),
 						Row(children: [
-							const Text('Familiarity'),
+							Text('Familiarity', style: Theme.of(context).textTheme.labelLarge as TextStyle),
 							Expanded(child: Slider(
-								value: sliderValue.toDouble(),
-								onChanged: (double value) => setState(() => sliderValue = value.toInt()),
+								value: max(flashcard.level.toDouble(), 1),
+								onChanged: (double value) =>
+									setState(() => flashcards[flashcardIndex].level = value.toInt()),
 								min: 1,
 								max: 4,
 								divisions: 3,
-								label: sliderValue.toInt().toString()
+								label: flashcard.level.toString()
 							)),
 						]),
 						TextButton(
-							onPressed: () =>
-								widget.model.drawFlashcards(10).then(
-									(value) => setState(() => flashcards = value)
-								),
+							onPressed: () => drawFlashcards(),
 							child: const Text('Next Batch')
 						)
 					]
 				)
 			)
 		]);
+		return result;
 	}
 	@override
 	bool get wantKeepAlive => true;
 }
 
-class VocabularyPage extends StatelessWidget {
-	const VocabularyPage({super.key});
+class VocabularyPage extends StatefulWidget {
+	final Model model;
+	const VocabularyPage(this.model, {super.key});
 	@override
-	Widget build(BuildContext context) => const Center(child: Text("TEST"));
+	State<VocabularyPage> createState() => _VocabularyPageState();
+}
+
+class _VocabularyPageState extends State<VocabularyPage> 
+	with AutomaticKeepAliveClientMixin<VocabularyPage> {
+	@override
+	Widget build(BuildContext context) {
+		super.build(context);
+		return const Text('stuff'); //TODO
+	}
+	@override
+	bool get wantKeepAlive => true;
 }
