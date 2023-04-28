@@ -1,5 +1,6 @@
 import '../model.dart';
 import 'package:flutter/material.dart';
+import 'package:animations/animations.dart';
 import 'dart:math';
 
 class StudyPage extends StatefulWidget {
@@ -42,7 +43,8 @@ class _StudyPageState extends State<StudyPage>
 							padding: const EdgeInsets.all(32),
 							child: FlashcardWidget(
 								flashcards[index],
-								shown: index == flashcardIndex && flashcardShown
+								shown: index == flashcardIndex && flashcardShown,
+								key: ValueKey(index)
 							)
 						));
 					},
@@ -51,7 +53,7 @@ class _StudyPageState extends State<StudyPage>
 			)),
 			Text(
 				'${flashcardIndex+1} / ${flashcards.length}',
-				style: Theme.of(context).textTheme.labelLarge as TextStyle
+				style: Theme.of(context).textTheme.labelLarge
 			),
 			const Divider(),
 			Padding(
@@ -75,7 +77,7 @@ class _StudyPageState extends State<StudyPage>
 							)
 						),
 						Row(children: [
-							Text('Familiarity', style: Theme.of(context).textTheme.labelLarge as TextStyle),
+							Text('Familiarity', style: Theme.of(context).textTheme.labelLarge),
 							Expanded(child: Slider(
 								value: max(flashcard.level.toDouble(), 1),
 								onChanged: (double value) =>
@@ -90,7 +92,7 @@ class _StudyPageState extends State<StudyPage>
 							onPressed: () {
 								pageController.animateToPage(
 									0,
-									duration: Duration(milliseconds: 100 * flashcardIndex),
+									duration: Duration(milliseconds: min(100 * flashcardIndex, 500)),
 									curve: Curves.decelerate
 								);
 								widget.model.drawFlashcards(10).then(
@@ -120,42 +122,52 @@ class FlashcardWidget extends StatelessWidget {
 		Widget contents;
 		if (!shown) {
 			contents = Text(
-				key: UniqueKey(),
 				flashcard.item,
-				style: Theme.of(context).textTheme.displayLarge as TextStyle,
+				style: Theme.of(context).textTheme.displayLarge?.apply(
+					color: Theme.of(context).colorScheme.primary,
+				),
 				textAlign: TextAlign.center
 			);
 		} else {
 			contents = Column(
-				key: UniqueKey(),
 				mainAxisAlignment: MainAxisAlignment.center,
 				children: [
 					Text(
 						flashcard.item,
-						style: Theme.of(context).textTheme.displayLarge as TextStyle,
+						style: Theme.of(context).textTheme.displayLarge?.apply(
+							color: Theme.of(context).colorScheme.primary,
+						),
 						textAlign: TextAlign.center
 					),
 					const Divider(indent: 16, endIndent: 16),
 					Text(
 						flashcard.prettyPinyin,
-						style: Theme.of(context).textTheme.headlineLarge as TextStyle,
+						style: Theme.of(context).textTheme.headlineLarge,
 						textAlign: TextAlign.center
 					),
 					const Divider(indent: 16, endIndent: 16),
 					Text(
 						flashcard.prettyDefinition,
-						style: Theme.of(context).textTheme.headlineSmall as TextStyle,
+						style: Theme.of(context).textTheme.headlineSmall,
 						textAlign: TextAlign.center
 					)
 				]
 			);
 		}
-		return Card(child: Center(child: Padding(
+		return Card(child: Center(child: SingleChildScrollView(child: Padding(
 			padding: const EdgeInsets.all(8),
-			child: AnimatedSwitcher(
-				duration: const Duration(milliseconds: 50),
+			child: PageTransitionSwitcher(
+				duration: const Duration(milliseconds: 200),
+				reverse: !shown,
+				transitionBuilder: (child, primary, secondary) => SharedAxisTransition(
+					animation: primary,
+					secondaryAnimation: secondary,
+					transitionType: SharedAxisTransitionType.vertical,
+					fillColor: Colors.transparent,
+					child: child
+				),
 				child: contents
 			)
-		)));
+		))));
 	}
 }

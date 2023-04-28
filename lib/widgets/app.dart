@@ -15,6 +15,7 @@ class _AppState extends State<App>
 	static const destinationNames = ['Study', 'Vocabulary'];
 	int navigationIndex = 0;
 	late TabController tabController;
+	PersistentBottomSheetController? sheetController;
 	@override
 	void initState() {
 		super.initState();
@@ -43,6 +44,7 @@ class _AppState extends State<App>
 				onDestinationSelected: (index) => setState(() {
 					navigationIndex = index;
 					tabController.animateTo(index);
+					sheetController?.close();
 				})
 			),
 			body: TabBarView(
@@ -50,7 +52,7 @@ class _AppState extends State<App>
 				physics: const NeverScrollableScrollPhysics(),
 				children: [
 					StudyPage(widget.model),
-					VocabPage(widget.model)
+					VocabPage(widget.model, setSheetController: (s) => sheetController = s)
 				]
 			)
 		)
