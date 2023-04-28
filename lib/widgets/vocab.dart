@@ -1,5 +1,6 @@
 import '../model.dart';
 import 'package:flutter/material.dart';
+import 'dart:math';
 
 class VocabPage extends StatefulWidget {
 	final Model model;
@@ -18,72 +19,70 @@ class VocabPage extends StatefulWidget {
 
 class _VocabState extends State<VocabPage> 
 	with AutomaticKeepAliveClientMixin<VocabPage> {
-	var flashcards = <Flashcard>[];
+	var charFlashcards = <Flashcard>[];
+	var wordFlashcards = <Flashcard>[];
 	PersistentBottomSheetController? sheetController;
 	@override
 	initState() {
 		super.initState();
 		widget.model.getFlashcards(count: 30).then(
-			(value) => setState(() => flashcards = value)
+			(value) => setState(() => charFlashcards = value)
+		);
+		widget.model.getFlashcards(count: 30).then(
+			(value) => setState(() => wordFlashcards = value)
 		);
 	}
 	@override
 	Widget build(BuildContext context) {
 		super.build(context);
-		return Column(children: [
-			Expanded(child: ListView.separated(
-				itemBuilder: (context, index) => InkWell(
-					key: ValueKey(index),
-					onTap: () {
+		return DefaultTabController(length: 2, child:
+			Column(children: [
+				const TabBar(tabs: [
+					Tab(text: 'Characters'),
+					Tab(text: 'Words')
+				]),
+				Expanded(child: TabBarView(children: [
+					VocabList(charFlashcards, onTap: (index) {
 						final future = sheetController?.closed ?? Future.value(null);
 						future.then((value) => setState(() {
 							sheetController = Scaffold.of(context).showBottomSheet(
-								(context) => VocabSheet(flashcards[index])
+								(context) => VocabSheet(charFlashcards[index])
 							);
 							widget.setSheetController(sheetController);
 						}));
 						sheetController?.close();
-					},
-					child: VocabListItem(flashcards[index])
-				),
-				separatorBuilder: (context, index) => const Divider(height: 1, thickness: 1),
-				itemCount: flashcards.length
-			))
-		]);
+					}),
+					VocabList(charFlashcards, onTap: (index) {
+						final future = sheetController?.closed ?? Future.value(null);
+						future.then((value) => setState(() {
+							sheetController = Scaffold.of(context).showBottomSheet(
+								(context) => VocabSheet(wordFlashcards[index])
+							);
+							widget.setSheetController(sheetController);
+						}));
+						sheetController?.close();
+					})
+				]))
+			])
+		);
 	}
 	@override
 	bool get wantKeepAlive => true;
 }
 
-class VocabSheet extends StatelessWidget {
-	final Flashcard flashcard;
-	const VocabSheet(this.flashcard, {super.key});
+class VocabList extends StatelessWidget {
+	final List<Flashcard> flashcards;
+	final void Function(int)? onTap;
+	const VocabList(this.flashcards, {this.onTap, super.key});
 	@override
-	Widget build(BuildContext context) => FractionallySizedBox(
-		widthFactor: 1,
-		child: Padding(
-			padding: const EdgeInsets.all(16),
-			child: Column(mainAxisSize: MainAxisSize.min, children: [
-				Row(children: [
-					Column(children: [
-						Text(
-							flashcard.item,
-							style: Theme.of(context).textTheme.headlineMedium?.apply(
-								color: Theme.of(context).colorScheme.primary
-							)
-						),
-						Text(
-							flashcard.prettyPinyin,
-							style: Theme.of(context).textTheme.titleMedium,
-						)
-					]),
-					Text(
-						flashcard.prettyDefinition,
-						style: Theme.of(context).textTheme.bodyMedium,
-					)
-				])
-			])
-		)
+	Widget build(BuildContext context) => ListView.separated(
+		itemBuilder: (context, index) => InkWell(
+			key: ValueKey(index),
+			onTap: () => onTap != null ? onTap!(index) : null,
+			child: VocabListItem(flashcards[index])
+		),
+		separatorBuilder: (context, index) => const Divider(height: 1, thickness: 1),
+		itemCount: flashcards.length
 	);
 }
 
@@ -135,5 +134,64 @@ class VocabListItem extends StatelessWidget {
 				)
 			),
 		])
+	);
+}
+
+class VocabSheet extends StatelessWidget {
+	final Flashcard flashcard;
+	const VocabSheet(this.flashcard, {super.key});
+	@override
+	Widget build(BuildContext context) => FractionallySizedBox(
+		widthFactor: 1,
+		child: Padding(
+			padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 8),
+			child: Table(
+				columnWidths: const {0: IntrinsicColumnWidth()},
+				defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+				children: [
+					TableRow(children: [
+						Column(children: [
+							Text(
+								flashcard.item,
+								style: Theme.of(context).textTheme.headlineMedium?.apply(
+									color: Theme.of(context).colorScheme.primary
+								)
+							),
+							Text(
+								flashcard.prettyPinyin,
+								style: Theme.of(context).textTheme.titleMedium,
+							)
+						]),
+						Text(
+							flashcard.prettyDefinition,
+							style: Theme.of(context).textTheme.bodyLarge,
+						)
+					]),
+					TableRow(children: [
+						Text('Familiarity', style: Theme.of(context).textTheme.labelLarge),
+						Slider(
+							value: max(flashcard.level.toDouble(), 1),
+							onChanged: (value) => flashcard.level = value.toInt(),
+							min: 0,
+							max: 4,
+							divisions: 4,
+							label: flashcard.level.toString()
+						)
+					]),
+					TableRow(children: [
+						Text('Streak', style: Theme.of(context).textTheme.labelLarge),
+						Row(children: [
+							Text(
+								flashcard.streak.toString(),
+								style: Theme.of(context).textTheme.titleMedium?.apply(
+									color: Theme.of(context).colorScheme.primary
+								)
+							),
+							const Icon(Icons.local_fire_department)
+						])
+					])
+				]
+			)
+		)
 	);
 }

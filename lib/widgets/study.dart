@@ -80,7 +80,7 @@ class _StudyPageState extends State<StudyPage>
 							Text('Familiarity', style: Theme.of(context).textTheme.labelLarge),
 							Expanded(child: Slider(
 								value: max(flashcard.level.toDouble(), 1),
-								onChanged: (double value) =>
+								onChanged: (value) =>
 									setState(() => flashcards[flashcardIndex].level = value.toInt()),
 								min: 1,
 								max: 4,
