@@ -1,5 +1,6 @@
 import '../model.dart';
 import '../util.dart';
+import 'util.dart';
 import 'package:flutter/material.dart';
 
 class VocabPage extends StatelessWidget {
@@ -13,10 +14,13 @@ class VocabPage extends StatelessWidget {
 				Tab(text: 'Characters'),
 				Tab(text: 'Words')
 			]),
-			Expanded(child: TabBarView(children: [
-				VocabTab(model, sheetController),
-				VocabTab(model, sheetController)
-			]))
+			Expanded(child: TabBarView(
+				physics: const NeverScrollableScrollPhysics(),
+				children: [
+					VocabTab(model, sheetController),
+					VocabTab(model, sheetController)
+				], 
+			))
 		])
 	);
 }
@@ -42,16 +46,46 @@ class _VocabTabState extends State<VocabTab>
 	@override
 	Widget build(BuildContext context) {
 		super.build(context);
-		return Column(children: [
-			Expanded(child: VocabList(flashcards, onTap: (index) {
-				final future = widget.sheetController.value?.closed ?? Future.value(null);
-				future.then((value) => setState(() {
-					widget.sheetController.value = Scaffold.of(context).showBottomSheet(
-						(context) => VocabSheet(flashcards[index])
-					);
-				}));
-				widget.sheetController.value?.close();
-			})),
+		return Stack(children: [
+			Column(children: [
+				Padding(
+					padding: const EdgeInsets.symmetric(horizontal: 16),
+					child: Row(children: [
+						const Expanded(flex: 3, child: TextField(
+							keyboardType: TextInputType.number,
+							decoration: InputDecoration(labelText: 'Offset'),
+							maxLength: 4
+						)),
+						Expanded(child: TextButton(
+							onPressed: () => 0,
+							child: const Text('Go')
+						)
+						)
+					])
+				),
+				Expanded(child: VocabList(flashcards, onTap: (index) {
+					final future = widget.sheetController.value?.closed ?? Future.value(null);
+					future.then((value) => setState(() {
+						widget.sheetController.value = Scaffold.of(context).showBottomSheet(
+							(context) => VocabSheet(widget.model, flashcards[index])
+						);
+					}));
+					widget.sheetController.value?.close();
+				})),
+			]),
+			Positioned(right: 8, bottom: 8, child: Column(children: [
+				FloatingActionButton.extended(
+					onPressed: () => 0,
+					label: const Text('Add'),
+					icon: const Icon(Icons.add)
+				),
+				const SizedBox(height: 8),
+				FloatingActionButton.extended(
+					onPressed: () => 0,
+					label: const Text('Edit'),
+					icon: const Icon(Icons.segment)
+				)
+			]))
 		]);
 	}
 	@override
@@ -126,8 +160,9 @@ class VocabListItem extends StatelessWidget {
 }
 
 class VocabSheet extends StatelessWidget {
+	final Model model;
 	final Flashcard flashcard;
-	const VocabSheet(this.flashcard, {super.key});
+	const VocabSheet(this.model, this.flashcard, {super.key});
 	@override
 	Widget build(BuildContext context) => FractionallySizedBox(
 		widthFactor: 1,
@@ -157,14 +192,7 @@ class VocabSheet extends StatelessWidget {
 					]),
 					TableRow(children: [
 						Text('Familiarity', style: Theme.of(context).textTheme.labelLarge),
-						Slider(
-							value: flashcard.level.toDouble(),
-							onChanged: (value) => flashcard.level = value.toInt(),
-							min: 0,
-							max: 4,
-							divisions: 4,
-							label: flashcard.level.toString()
-						)
+						FlashcardSlider(model, flashcard)
 					]),
 					TableRow(children: [
 						Text('Streak', style: Theme.of(context).textTheme.labelLarge),
