@@ -1,70 +1,58 @@
 import '../model.dart';
+import '../util.dart';
 import 'package:flutter/material.dart';
-import 'dart:math';
 
-class VocabPage extends StatefulWidget {
+class VocabPage extends StatelessWidget {
 	final Model model;
-	/*
-		To close the current bottom sheet
-		when the app is navigated to a different page,
-		this widget is passed a callback which sets the App sheet controller
-		to the current sheet controller,
-		so that the App can close the current sheet.
-	*/
-	final void Function(PersistentBottomSheetController?) setSheetController;
-	const VocabPage(this.model, {required this.setSheetController, super.key});
+	final ValueWrapper<PersistentBottomSheetController> sheetController;
+	const VocabPage(this.model, this.sheetController, {super.key});
 	@override
-	State<VocabPage> createState() => _VocabState();
+	Widget build(BuildContext context) => DefaultTabController(length: 2, child:
+		Column(children: [
+			const TabBar(tabs: [
+				Tab(text: 'Characters'),
+				Tab(text: 'Words')
+			]),
+			Expanded(child: TabBarView(children: [
+				VocabTab(model, sheetController),
+				VocabTab(model, sheetController)
+			]))
+		])
+	);
 }
 
-class _VocabState extends State<VocabPage> 
-	with AutomaticKeepAliveClientMixin<VocabPage> {
-	var charFlashcards = <Flashcard>[];
-	var wordFlashcards = <Flashcard>[];
-	PersistentBottomSheetController? sheetController;
+class VocabTab extends StatefulWidget {
+	final Model model;
+	final ValueWrapper<PersistentBottomSheetController> sheetController;
+	const VocabTab(this.model, this.sheetController, {super.key});
+	@override
+	State<VocabTab> createState() => _VocabTabState();
+}
+
+class _VocabTabState extends State<VocabTab>
+	with AutomaticKeepAliveClientMixin<VocabTab> {
+	var flashcards = <Flashcard>[];
 	@override
 	initState() {
 		super.initState();
 		widget.model.getFlashcards(count: 30).then(
-			(value) => setState(() => charFlashcards = value)
-		);
-		widget.model.getFlashcards(count: 30).then(
-			(value) => setState(() => wordFlashcards = value)
+			(value) => setState(() => flashcards = value)
 		);
 	}
 	@override
 	Widget build(BuildContext context) {
 		super.build(context);
-		return DefaultTabController(length: 2, child:
-			Column(children: [
-				const TabBar(tabs: [
-					Tab(text: 'Characters'),
-					Tab(text: 'Words')
-				]),
-				Expanded(child: TabBarView(children: [
-					VocabList(charFlashcards, onTap: (index) {
-						final future = sheetController?.closed ?? Future.value(null);
-						future.then((value) => setState(() {
-							sheetController = Scaffold.of(context).showBottomSheet(
-								(context) => VocabSheet(charFlashcards[index])
-							);
-							widget.setSheetController(sheetController);
-						}));
-						sheetController?.close();
-					}),
-					VocabList(charFlashcards, onTap: (index) {
-						final future = sheetController?.closed ?? Future.value(null);
-						future.then((value) => setState(() {
-							sheetController = Scaffold.of(context).showBottomSheet(
-								(context) => VocabSheet(wordFlashcards[index])
-							);
-							widget.setSheetController(sheetController);
-						}));
-						sheetController?.close();
-					})
-				]))
-			])
-		);
+		return Column(children: [
+			Expanded(child: VocabList(flashcards, onTap: (index) {
+				final future = widget.sheetController.value?.closed ?? Future.value(null);
+				future.then((value) => setState(() {
+					widget.sheetController.value = Scaffold.of(context).showBottomSheet(
+						(context) => VocabSheet(flashcards[index])
+					);
+				}));
+				widget.sheetController.value?.close();
+			})),
+		]);
 	}
 	@override
 	bool get wantKeepAlive => true;
@@ -170,7 +158,7 @@ class VocabSheet extends StatelessWidget {
 					TableRow(children: [
 						Text('Familiarity', style: Theme.of(context).textTheme.labelLarge),
 						Slider(
-							value: max(flashcard.level.toDouble(), 1),
+							value: flashcard.level.toDouble(),
 							onChanged: (value) => flashcard.level = value.toInt(),
 							min: 0,
 							max: 4,
@@ -187,7 +175,10 @@ class VocabSheet extends StatelessWidget {
 									color: Theme.of(context).colorScheme.primary
 								)
 							),
-							const Icon(Icons.local_fire_department)
+							const Padding(
+								padding: EdgeInsets.symmetric(horizontal: 8),
+								child: Icon(Icons.done_all)
+							)
 						])
 					])
 				]
