@@ -1,6 +1,6 @@
-import '../model.dart';
-import '../util.dart';
+import 'model.dart';
 import 'study.dart';
+import 'util.dart';
 import 'vocab.dart';
 import 'package:flutter/material.dart';
 

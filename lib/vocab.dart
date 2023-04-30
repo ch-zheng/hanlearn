@@ -1,5 +1,4 @@
-import '../model.dart';
-import '../util.dart';
+import 'model.dart';
 import 'util.dart';
 import 'package:flutter/material.dart';
 
