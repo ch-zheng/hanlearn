@@ -1,58 +1,58 @@
 import 'model.dart';
 import 'package:flutter/material.dart';
 import 'package:animations/animations.dart';
+import 'package:provider/provider.dart';
 import 'dart:math';
+import 'dart:collection';
 
 class StudyPage extends StatefulWidget {
-	final Model model;
-	const StudyPage(this.model, {super.key});
+	const StudyPage({super.key});
 	@override
 	State<StudyPage> createState() => _StudyPageState();
 }
 
 class _StudyPageState extends State<StudyPage> 
 	with AutomaticKeepAliveClientMixin<StudyPage> {
-	var flashcards = <Flashcard>[];
-	int flashcardIndex = 0;
-	bool flashcardShown = false;
-	final pageController = PageController();
+	late UnmodifiableListView<Flashcard> _flashcards;
+	int _flashcardIndex = 0;
+	bool _flashcardShown = false;
+	final _pageController = PageController();
 	@override
-	initState() {
+	void initState() {
 		super.initState();
-		widget.model.drawFlashcards(10).then(
-			(value) => setState(() => flashcards = value)
-		);
+		final model = Provider.of<Model>(context, listen: false);
+		_flashcards = model.draw(FlashcardType.character, 10);
 	}
 	@override
 	Widget build(BuildContext context) {
 		super.build(context);
-		final flashcard = flashcards.isNotEmpty ?
-			flashcards[flashcardIndex]
-			: Flashcard(0, '', '', '');
+		final flashcard = _flashcards.isNotEmpty ?
+			_flashcards[_flashcardIndex]
+			: Flashcard(FlashcardType.character, 0, '', '', ''); //FIXME
 		return Column(children: [
 			Expanded(child: GestureDetector(
-				onTap: () => setState(() => flashcardShown = !flashcardShown),
+				onTap: () => setState(() => _flashcardShown = !_flashcardShown),
 				child: PageView.builder(
-					controller: pageController,
+					controller: _pageController,
 					onPageChanged: (value) => setState(() {
-						flashcardIndex = value;
-						flashcardShown = false;
+						_flashcardIndex = value;
+						_flashcardShown = false;
 					}),
 					itemBuilder: (context, index) {
 						return Center(child: Padding (
 							padding: const EdgeInsets.all(32),
 							child: FlashcardWidget(
-								flashcards[index],
-								shown: index == flashcardIndex && flashcardShown,
+								_flashcards[index],
+								shown: index == _flashcardIndex && _flashcardShown,
 								key: ValueKey(index)
 							)
 						));
 					},
-					itemCount: flashcards.length
+					itemCount: _flashcards.length
 				)
 			)),
 			Text(
-				'${flashcardIndex+1} / ${flashcards.length}',
+				'${_flashcardIndex+1} / ${_flashcards.length}',
 				style: Theme.of(context).textTheme.labelLarge
 			),
 			const Divider(),
@@ -80,8 +80,11 @@ class _StudyPageState extends State<StudyPage>
 							Text('Familiarity', style: Theme.of(context).textTheme.labelLarge),
 							Expanded(child: Slider(
 								value: max(flashcard.level.toDouble(), 1),
-								onChanged: (value) =>
-									setState(() => flashcards[flashcardIndex].level = value.toInt()),
+								onChanged: (value) => setState(() {
+									flashcard.level = value.toInt();
+									final model = Provider.of<Model>(context);
+									model.replace(flashcard.type, flashcard.id);
+								}),
 								min: 1,
 								max: 4,
 								divisions: 3,
@@ -90,17 +93,13 @@ class _StudyPageState extends State<StudyPage>
 						]),
 						TextButton(
 							onPressed: () {
-								pageController.animateToPage(
+								_pageController.animateToPage(
 									0,
-									duration: Duration(milliseconds: min(100 * flashcardIndex, 500)),
+									duration: Duration(milliseconds: min(100 * _flashcardIndex, 500)),
 									curve: Curves.decelerate
 								);
-								widget.model.drawFlashcards(10).then(
-									(value) => setState(() {
-										flashcards = value;
-										flashcardIndex = 0;
-									})
-								);
+								_flashcards = Provider.of<Model>(context, listen: false)
+									.draw(FlashcardType.character, 10);
 							},
 							child: const Text('Next Batch')
 						)

@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 
 void main() async {
 	WidgetsFlutterBinding.ensureInitialized();
-	final model = Model();
-	await model.initialize();
+	final model = await Model.build();
 	runApp(App(model));
 }

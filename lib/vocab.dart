@@ -1,52 +1,37 @@
 import 'model.dart';
 import 'util.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'dart:collection';
 
 class VocabPage extends StatelessWidget {
-	final Model model;
-	final ValueWrapper<PersistentBottomSheetController> sheetController;
-	const VocabPage(this.model, this.sheetController, {super.key});
+	const VocabPage({super.key});
 	@override
 	Widget build(BuildContext context) => DefaultTabController(length: 2, child:
-		Column(children: [
-			const TabBar(tabs: [
+		Column(children: const [
+			TabBar(tabs: [
 				Tab(text: 'Characters'),
 				Tab(text: 'Words')
 			]),
 			Expanded(child: TabBarView(
-				physics: const NeverScrollableScrollPhysics(),
+				physics: NeverScrollableScrollPhysics(),
 				children: [
-					VocabTab(model, sheetController),
-					VocabTab(model, sheetController)
+					VocabTab(FlashcardType.character),
+					VocabTab(FlashcardType.word)
 				], 
 			))
 		])
 	);
 }
 
-class VocabTab extends StatefulWidget {
-	final Model model;
-	final ValueWrapper<PersistentBottomSheetController> sheetController;
-	const VocabTab(this.model, this.sheetController, {super.key});
-	@override
-	State<VocabTab> createState() => _VocabTabState();
-}
-
-class _VocabTabState extends State<VocabTab>
-	with AutomaticKeepAliveClientMixin<VocabTab> {
-	var flashcards = <Flashcard>[];
-	@override
-	initState() {
-		super.initState();
-		widget.model.getFlashcards(count: 30).then(
-			(value) => setState(() => flashcards = value)
-		);
-	}
+class VocabTab extends StatelessWidget {
+	final FlashcardType _vocabType;
+	const VocabTab(this._vocabType, {super.key});
 	@override
 	Widget build(BuildContext context) {
-		super.build(context);
 		return Stack(children: [
 			Column(children: [
+				//List controls
 				Padding(
 					padding: const EdgeInsets.symmetric(horizontal: 16),
 					child: Row(children: [
@@ -62,16 +47,10 @@ class _VocabTabState extends State<VocabTab>
 						)
 					])
 				),
-				Expanded(child: VocabList(flashcards, onTap: (index) {
-					final future = widget.sheetController.value?.closed ?? Future.value(null);
-					future.then((value) => setState(() {
-						widget.sheetController.value = Scaffold.of(context).showBottomSheet(
-							(context) => VocabSheet(widget.model, flashcards[index])
-						);
-					}));
-					widget.sheetController.value?.close();
-				})),
+				//Vocabulary list
+				Expanded(child: VocabList(_vocabType)),
 			]),
+			//Floating action buttons
 			Positioned(right: 8, bottom: 8, child: Column(children: [
 				FloatingActionButton.extended(
 					onPressed: () => 0,
@@ -87,41 +66,56 @@ class _VocabTabState extends State<VocabTab>
 			]))
 		]);
 	}
-	@override
-	bool get wantKeepAlive => true;
 }
 
 class VocabList extends StatelessWidget {
-	final List<Flashcard> flashcards;
-	final void Function(int)? onTap;
-	const VocabList(this.flashcards, {this.onTap, super.key});
+	final FlashcardType _vocabType;
+	const VocabList(this._vocabType, {super.key});
 	@override
-	Widget build(BuildContext context) => ListView.separated(
-		itemBuilder: (context, index) => InkWell(
-			key: ValueKey(index),
-			onTap: () => onTap != null ? onTap!(index) : null,
-			child: VocabListItem(flashcards[index])
-		),
-		separatorBuilder: (context, index) => const Divider(height: 1, thickness: 1),
-		itemCount: flashcards.length
-	);
+	Widget build(BuildContext context) {
+		final model = Provider.of<Model>(context);
+		late final UnmodifiableListView<Flashcard> deck;
+		switch (_vocabType) {
+			case FlashcardType.character:
+				deck = model.chars;
+				break;
+			case FlashcardType.word:
+				deck = model.words;
+				break;
+		}
+		return ListView.separated(
+			itemBuilder: (context, index) => InkWell(
+				key: ValueKey(index),
+				onTap: () {
+					final sheetRef = Provider.of<Reference<PersistentBottomSheetController>>(context, listen: false);
+					final closed = sheetRef.value?.closed ?? Future.value(null);
+					closed.then((_) => sheetRef.value = Scaffold.of(context)
+						.showBottomSheet((_) => VocabSheet(deck[index])));
+					sheetRef.value?.close();
+				},
+				child: VocabListItem(deck[index])
+			),
+			separatorBuilder: (context, index) => const Divider(height: 1, thickness: 1),
+			itemCount: deck.length
+		);
+	}
 }
 
 class VocabListItem extends StatelessWidget {
-	final Flashcard flashcard;
-	const VocabListItem(this.flashcard, {super.key});
+	final Flashcard _flashcard;
+	const VocabListItem(this._flashcard, {super.key});
 	@override
 	Widget build(BuildContext context) => Padding(
 		padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
 		child: Row(children: [
 			Container(
 				margin: const EdgeInsets.only(right: 16),
-				child: Text('${(flashcard.id + 1).toString()}.')
+				child: Text('${(_flashcard.id + 1).toString()}.')
 			),
 			Container(
 				margin: const EdgeInsets.only(right: 16),
 				child: Text(
-					flashcard.item,
+					_flashcard.item,
 					style: Theme.of(context).textTheme.labelLarge?.apply(
 						color: Theme.of(context).colorScheme.primary,
 						fontWeightDelta: 1
@@ -131,12 +125,12 @@ class VocabListItem extends StatelessWidget {
 			Container(
 				margin: const EdgeInsets.only(right: 16),
 				child: Text(
-					flashcard.prettyPinyin,
+					_flashcard.prettyPinyin,
 					style: Theme.of(context).textTheme.labelLarge
 				)
 			),
 			Expanded(child: Text(
-				flashcard.prettyDefinition,
+				_flashcard.prettyDefinition,
 				style: Theme.of(context).textTheme.bodyMedium,
 				overflow: TextOverflow.ellipsis
 			)),
@@ -144,13 +138,13 @@ class VocabListItem extends StatelessWidget {
 				margin: const EdgeInsets.only(left: 16),
 				child: SizedBox(
 					width: 64,
-					child: LinearProgressIndicator(value: flashcard.level.toDouble() / 4.0)
+					child: LinearProgressIndicator(value: _flashcard.level.toDouble() / 4.0)
 				)
 			),
 			Container(
 				margin: const EdgeInsets.only(left: 16),
 				child: Text(
-					flashcard.level.toString(),
+					_flashcard.level.toString(),
 					style: Theme.of(context).textTheme.labelLarge
 				)
 			),
@@ -159,9 +153,8 @@ class VocabListItem extends StatelessWidget {
 }
 
 class VocabSheet extends StatelessWidget {
-	final Model model;
-	final Flashcard flashcard;
-	const VocabSheet(this.model, this.flashcard, {super.key});
+	final Flashcard _flashcard;
+	const VocabSheet(this._flashcard, {super.key});
 	@override
 	Widget build(BuildContext context) => FractionallySizedBox(
 		widthFactor: 1,
@@ -171,33 +164,48 @@ class VocabSheet extends StatelessWidget {
 				columnWidths: const {0: IntrinsicColumnWidth()},
 				defaultVerticalAlignment: TableCellVerticalAlignment.middle,
 				children: [
+					//Definition
 					TableRow(children: [
 						Column(children: [
 							Text(
-								flashcard.item,
+								_flashcard.item,
 								style: Theme.of(context).textTheme.headlineMedium?.apply(
 									color: Theme.of(context).colorScheme.primary
 								)
 							),
 							Text(
-								flashcard.prettyPinyin,
+								_flashcard.prettyPinyin,
 								style: Theme.of(context).textTheme.titleMedium,
 							)
 						]),
 						Text(
-							flashcard.prettyDefinition,
+							_flashcard.prettyDefinition,
 							style: Theme.of(context).textTheme.bodyLarge,
 						)
 					]),
+					//Familiarity
 					TableRow(children: [
 						Text('Familiarity', style: Theme.of(context).textTheme.labelLarge),
-						FlashcardSlider(model, flashcard)
+						Consumer<Model>(
+							builder: (context, model, child) => Slider(
+								value: _flashcard.level.toDouble(),
+								onChanged: (value) {
+									_flashcard.level = value.toInt();
+									model.replace(_flashcard.type, _flashcard.id);
+								},
+								min: 0,
+								max: 4,
+								divisions: 4,
+								label: _flashcard.level.toString()
+							)
+						)
 					]),
+					//Streak
 					TableRow(children: [
 						Text('Streak', style: Theme.of(context).textTheme.labelLarge),
 						Row(children: [
 							Text(
-								flashcard.streak.toString(),
+								_flashcard.streak.toString(),
 								style: Theme.of(context).textTheme.titleMedium?.apply(
 									color: Theme.of(context).colorScheme.primary
 								)
