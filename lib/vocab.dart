@@ -1,20 +1,21 @@
 import 'model.dart';
+import 'settings.dart';
 import 'util.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show FilteringTextInputFormatter;
 import 'package:provider/provider.dart';
-import 'dart:collection';
 
 class VocabPage extends StatelessWidget {
 	const VocabPage({super.key});
 	@override
 	Widget build(BuildContext context) => DefaultTabController(length: 2, child:
-		Column(children: const [
-			TabBar(tabs: [
+		Column(children: [
+			const TabBar(tabs: [
 				Tab(text: 'Characters'),
 				Tab(text: 'Words')
 			]),
 			Expanded(child: TabBarView(
-				physics: NeverScrollableScrollPhysics(),
+				physics: const NeverScrollableScrollPhysics(),
 				children: [
 					VocabTab(FlashcardType.character),
 					VocabTab(FlashcardType.word)
@@ -25,8 +26,10 @@ class VocabPage extends StatelessWidget {
 }
 
 class VocabTab extends StatelessWidget {
-	final FlashcardType _vocabType;
-	const VocabTab(this._vocabType, {super.key});
+	final FlashcardType _flashcardType;
+	final _scrollController = ScrollController();
+	final _textController = TextEditingController();
+	VocabTab(this._flashcardType, {super.key});
 	@override
 	Widget build(BuildContext context) {
 		return Stack(children: [
@@ -35,126 +38,135 @@ class VocabTab extends StatelessWidget {
 				Padding(
 					padding: const EdgeInsets.symmetric(horizontal: 16),
 					child: Row(children: [
-						const Expanded(flex: 3, child: TextField(
+						Expanded(flex: 3, child: TextField(
+							controller: _textController,
 							keyboardType: TextInputType.number,
-							decoration: InputDecoration(labelText: 'Offset'),
-							maxLength: 4
+							decoration: const InputDecoration(labelText: 'Offset'),
+							maxLength: 4,
+							inputFormatters: [FilteringTextInputFormatter.digitsOnly],
 						)),
 						Expanded(child: TextButton(
-							onPressed: () => 0,
+							onPressed: () => _scrollController.animateTo(
+								65 * double.parse(_textController.text),
+								duration: const Duration(seconds: 1),
+								curve: Curves.decelerate
+							),
 							child: const Text('Go')
-						)
-						)
+						))
 					])
 				),
 				//Vocabulary list
-				Expanded(child: VocabList(_vocabType)),
+				Expanded(child: VocabList(_flashcardType, controller: _scrollController)),
 			]),
 			//Floating action buttons
-			Positioned(right: 8, bottom: 8, child: Column(children: [
+			if (_flashcardType == FlashcardType.character) Positioned(right: 8, bottom: 8, child: Column(children: [
 				FloatingActionButton.extended(
-					onPressed: () => 0,
-					label: const Text('Add'),
+					onPressed: () {
+						final model = Provider.of<Model>(context, listen: false);
+						final settings = Provider.of<Settings>(context, listen: false);
+						final count = model.advance(settings.advanceSize);
+						ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+							content: Text(
+								'Added $count characters',
+								style: Theme.of(context).textTheme.bodyMedium?.apply(
+									color: Theme.of(context).colorScheme.onInverseSurface
+								)
+							),
+							duration: const Duration(seconds: 1)
+						));
+					},
+					label: const Text('Advance'),
 					icon: const Icon(Icons.add)
 				),
 				const SizedBox(height: 8),
+				FloatingActionButton.extended(
+					onPressed: () {
+						final model = Provider.of<Model>(context, listen: false);
+						final settings = Provider.of<Settings>(context, listen: false);
+						final count = model.retreat(settings.advanceSize);
+						ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+							content: Text(
+								'Removed $count characters',
+								style: Theme.of(context).textTheme.bodyMedium?.apply(
+									color: Theme.of(context).colorScheme.onInverseSurface
+								)
+							),
+							duration: const Duration(seconds: 1)
+						));
+					},
+					label: const Text('Withdraw'),
+					icon: const Icon(Icons.remove)
+				),
+				const SizedBox(height: 8),
+				/*
 				FloatingActionButton.extended(
 					onPressed: () => 0,
 					label: const Text('Edit'),
 					icon: const Icon(Icons.segment)
 				)
+				*/
 			]))
 		]);
 	}
 }
 
 class VocabList extends StatelessWidget {
-	final FlashcardType _vocabType;
-	const VocabList(this._vocabType, {super.key});
+	final FlashcardType _flashcardType;
+	final ScrollController? controller;
+	const VocabList(this._flashcardType, {required this.controller, super.key});
 	@override
 	Widget build(BuildContext context) {
 		final model = Provider.of<Model>(context);
-		late final UnmodifiableListView<Flashcard> deck;
-		switch (_vocabType) {
-			case FlashcardType.character:
-				deck = model.chars;
-				break;
-			case FlashcardType.word:
-				deck = model.words;
-				break;
-		}
+		final deck = _flashcardType == FlashcardType.character ? model.chars : model.knownWords;
 		return ListView.separated(
-			itemBuilder: (context, index) => InkWell(
-				key: ValueKey(index),
-				onTap: () {
-					final sheetRef = Provider.of<Reference<PersistentBottomSheetController>>(context, listen: false);
-					final closed = sheetRef.value?.closed ?? Future.value(null);
-					closed.then((_) => sheetRef.value = Scaffold.of(context)
-						.showBottomSheet((_) => VocabSheet(deck[index])));
-					sheetRef.value?.close();
-				},
-				child: VocabListItem(deck[index])
-			),
+			controller: controller,
+			itemBuilder: (context, index) {
+				final flashcard = deck[index];
+				return SizedBox(height: 64, child: ListTile(
+					key: ValueKey(index),
+					leading: Row(mainAxisSize: MainAxisSize.min, children: [
+						Text('${flashcard.id + 1}'),
+						const SizedBox(width: 16),
+						Text(
+							flashcard.item,
+							style: Theme.of(context).textTheme.titleLarge?.apply(
+								color: Theme.of(context).colorScheme.primary,
+								fontWeightDelta: 1
+							)
+						)
+					]),
+					title: Text(
+						flashcard.prettyPinyin,
+						style: Theme.of(context).textTheme.labelLarge
+					),
+					subtitle: Text(
+						flashcard.prettyDefinition,
+						style: Theme.of(context).textTheme.bodyMedium,
+						overflow: TextOverflow.ellipsis
+					),
+					trailing: SizedBox(
+						width: 64,
+						child: LinearProgressIndicator(value: flashcard.level.toDouble() / 4.0)
+					),
+					enabled: flashcard.level > 0,
+					onTap: flashcard.level > 0 ? () {
+						final sheetRef = Provider.of<Reference<PersistentBottomSheetController>>(context, listen: false);
+						final closed = sheetRef.value?.closed ?? Future.value(null);
+						closed.then((_) => sheetRef.value = Scaffold.of(context)
+							.showBottomSheet((_) => _VocabSheet(flashcard)));
+						sheetRef.value?.close();
+					} : null
+				));
+			},
 			separatorBuilder: (context, index) => const Divider(height: 1, thickness: 1),
 			itemCount: deck.length
 		);
 	}
 }
 
-class VocabListItem extends StatelessWidget {
+class _VocabSheet extends StatelessWidget {
 	final Flashcard _flashcard;
-	const VocabListItem(this._flashcard, {super.key});
-	@override
-	Widget build(BuildContext context) => Padding(
-		padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-		child: Row(children: [
-			Container(
-				margin: const EdgeInsets.only(right: 16),
-				child: Text('${(_flashcard.id + 1).toString()}.')
-			),
-			Container(
-				margin: const EdgeInsets.only(right: 16),
-				child: Text(
-					_flashcard.item,
-					style: Theme.of(context).textTheme.labelLarge?.apply(
-						color: Theme.of(context).colorScheme.primary,
-						fontWeightDelta: 1
-					)
-				)
-			),
-			Container(
-				margin: const EdgeInsets.only(right: 16),
-				child: Text(
-					_flashcard.prettyPinyin,
-					style: Theme.of(context).textTheme.labelLarge
-				)
-			),
-			Expanded(child: Text(
-				_flashcard.prettyDefinition,
-				style: Theme.of(context).textTheme.bodyMedium,
-				overflow: TextOverflow.ellipsis
-			)),
-			Container(
-				margin: const EdgeInsets.only(left: 16),
-				child: SizedBox(
-					width: 64,
-					child: LinearProgressIndicator(value: _flashcard.level.toDouble() / 4.0)
-				)
-			),
-			Container(
-				margin: const EdgeInsets.only(left: 16),
-				child: Text(
-					_flashcard.level.toString(),
-					style: Theme.of(context).textTheme.labelLarge
-				)
-			),
-		])
-	);
-}
-
-class VocabSheet extends StatelessWidget {
-	final Flashcard _flashcard;
-	const VocabSheet(this._flashcard, {super.key});
+	const _VocabSheet(this._flashcard);
 	@override
 	Widget build(BuildContext context) => FractionallySizedBox(
 		widthFactor: 1,
@@ -191,11 +203,11 @@ class VocabSheet extends StatelessWidget {
 								value: _flashcard.level.toDouble(),
 								onChanged: (value) {
 									_flashcard.level = value.toInt();
-									model.replace(_flashcard.type, _flashcard.id);
+									model.update(_flashcard);
 								},
-								min: 0,
+								min: 1,
 								max: 4,
-								divisions: 4,
+								divisions: 3,
 								label: _flashcard.level.toString()
 							)
 						)

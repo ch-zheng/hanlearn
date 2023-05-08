@@ -1,9 +1,11 @@
 import 'app.dart';
 import 'model.dart';
+import 'settings.dart';
 import 'package:flutter/material.dart';
 
 void main() async {
 	WidgetsFlutterBinding.ensureInitialized();
 	final model = await Model.build();
-	runApp(App(model));
+	final settings = await Settings.build();
+	runApp(App(model, settings));
 }

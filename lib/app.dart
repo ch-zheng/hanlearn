@@ -1,4 +1,6 @@
 import 'model.dart';
+import 'options.dart';
+import 'settings.dart';
 import 'study.dart';
 import 'util.dart';
 import 'vocab.dart';
@@ -7,21 +9,26 @@ import 'package:provider/provider.dart';
 
 class App extends StatefulWidget {
 	final Model model;
-	const App(this.model, {super.key});
+	final Settings settings;
+	const App(this.model, this.settings, {super.key});
 	@override
 	State<App> createState() => _AppState();
 }
 
 class _AppState extends State<App>
 	with SingleTickerProviderStateMixin {
-	static const destinationNames = ['Study', 'Vocabulary'];
+	final _destinations = [
+		const NavigationDestination(icon: Icon(Icons.book), label: 'Study'),
+		const NavigationDestination(icon: Icon(Icons.list), label: 'Vocabulary'),
+		const NavigationDestination(icon: Icon(Icons.settings), label: 'Settings')
+	];
 	final _sheetController = Reference<PersistentBottomSheetController>();
 	int navigationIndex = 0;
 	late TabController tabController;
 	@override
 	void initState() {
 		super.initState();
-		tabController = TabController(length: 2, vsync: this);
+		tabController = TabController(length: 3, vsync: this);
 	}
 	@override
 	void dispose() {
@@ -32,6 +39,7 @@ class _AppState extends State<App>
 	Widget build(BuildContext context) => MultiProvider(
 		providers: [
 			ChangeNotifierProvider<Model>.value(value: widget.model),
+			ChangeNotifierProvider<Settings>.value(value: widget.settings),
 			Provider.value(value: _sheetController)
 		],
 		child: MaterialApp(
@@ -40,14 +48,11 @@ class _AppState extends State<App>
 			home: Scaffold(
 				appBar: AppBar(title: Container(
 					margin: const EdgeInsets.symmetric(horizontal: 8),
-					child: Text(destinationNames[navigationIndex])
+					child: Text(_destinations[navigationIndex].label)
 				)),
 				bottomNavigationBar: NavigationBar(
 					selectedIndex: navigationIndex,
-					destinations: const [
-						NavigationDestination(icon: Icon(Icons.book), label: 'Study'),
-						NavigationDestination(icon: Icon(Icons.list), label: 'Vocabulary')
-					],
+					destinations: _destinations,
 					onDestinationSelected: (index) => setState(() {
 						navigationIndex = index;
 						tabController.animateTo(index);
@@ -57,9 +62,10 @@ class _AppState extends State<App>
 				body: TabBarView(
 					controller: tabController,
 					physics: const NeverScrollableScrollPhysics(),
-					children: const [
-						StudyPage(),
-						VocabPage()
+					children: [
+						const StudyPage(),
+						const VocabPage(),
+						SettingsPage()
 					]
 				)
 			)
