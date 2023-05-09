@@ -28,7 +28,8 @@ class SettingsPage extends StatelessWidget {
 						),
 						maxLength: 3,
 						inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-						onSubmitted: (input) => settings.batchSize = int.parse(input)
+						onSubmitted: (input) => settings.batchSize
+							= int.tryParse(input) ?? settings.batchSize
 					),
 					const Divider(),
 					//Maximum level
@@ -78,7 +79,8 @@ class SettingsPage extends StatelessWidget {
 						),
 						maxLength: 4,
 						inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-						onSubmitted: (input) => settings.advanceSize = int.parse(input)
+						onSubmitted: (input) => settings.advanceSize
+							= int.tryParse(input) ?? settings.advanceSize
 					),
 				])
 			));

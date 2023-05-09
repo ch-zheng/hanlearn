@@ -221,6 +221,7 @@ class _Flashcard extends StatelessWidget {
 	const _Flashcard(this._flashcard, {this.shown = false, super.key});
 	@override
 	Widget build(BuildContext context) {
+		final prettyDefinition = _flashcard.prettyDefinition;
 		final Widget contents = !shown ? Text(
 			_flashcard.item,
 			style: Theme.of(context).textTheme.displayLarge?.apply(
@@ -245,8 +246,10 @@ class _Flashcard extends StatelessWidget {
 				),
 				const Divider(indent: 16, endIndent: 16),
 				Text(
-					_flashcard.prettyDefinition,
-					style: Theme.of(context).textTheme.bodyLarge,
+					prettyDefinition,
+					style: Theme.of(context).textTheme.bodyLarge?.apply(
+						fontSizeFactor: max(2 - 0.04 * prettyDefinition.length, 1)
+					),
 					textAlign: TextAlign.center
 				)
 			]

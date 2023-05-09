@@ -209,29 +209,26 @@ class Model extends ChangeNotifier {
 		assert(count >= 0);
 		assert(maxLevel > 0);
 		assert(maxLevel <= 4);
-		count = min(count, _knownChars + _knownWords.length);
 		final candidates = _chars.sublist(0, _knownChars);
 		candidates
 			..insertAll(candidates.length, _knownWords)
 			..retainWhere((item) => item.level <= maxLevel)
 			..shuffle();
-		return UnmodifiableListView(candidates.getRange(0, count));
+		return UnmodifiableListView(candidates.getRange(0, min(count, candidates.length)));
 	}
 	UnmodifiableListView<Flashcard> drawChars(int count, {int maxLevel = 4}) {
 		assert(count >= 0);
-		count = min(count, _knownChars);
 		final candidates = _chars.sublist(0, _knownChars)
 			..retainWhere((item) => item.level <= maxLevel)
 			..shuffle();
-		return UnmodifiableListView(candidates.getRange(0, count));
+		return UnmodifiableListView(candidates.getRange(0, min(count, candidates.length)));
 	}
 	UnmodifiableListView<Flashcard> drawWords(int count, {int maxLevel = 4}) {
 		assert(count >= 0);
-		count = min(count, _knownWords.length);
 		final candidates = _knownWords
 			..retainWhere((item) => item.level <= maxLevel)
 			..shuffle();
-		return UnmodifiableListView(candidates.getRange(0, count));
+		return UnmodifiableListView(candidates.getRange(0, min(count, candidates.length)));
 	}
 	static Future<Model> build() async {
 		//Create SQL database
