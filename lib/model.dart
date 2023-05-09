@@ -34,6 +34,7 @@ class Flashcard {
 				case '2':
 				case '3':
 				case '4':
+				case '5':
 					var tone = int.parse(s[s.length - 1]) - 1;
 					//Rule 1: 'a' or 'e' => It takes tone
 					//Rule 2: 'ou' => 'o' takes tone

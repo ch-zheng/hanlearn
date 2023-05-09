@@ -52,43 +52,49 @@ class VocabTab extends StatelessWidget {
 			//Floating action buttons
 			Positioned(right: 8, bottom: 0, child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
 				//Advance
-				Container(margin: const EdgeInsets.only(bottom: 8), child: FloatingActionButton.extended(
-					onPressed: () {
-						final model = Provider.of<Model>(context, listen: false);
-						final settings = Provider.of<Settings>(context, listen: false);
-						final count = model.advance(settings.advanceSize);
-						ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-							content: Text(
-								'Added $count characters',
-								style: Theme.of(context).textTheme.bodyMedium?.apply(
-									color: Theme.of(context).colorScheme.onInverseSurface
-								)
-							),
-							duration: const Duration(seconds: 1)
-						));
-					},
-					label: const Text('Advance'),
-					icon: const Icon(Icons.add)
-				)),
+				if (_flashcardType == FlashcardType.character) Container(
+					margin: const EdgeInsets.only(bottom: 8),
+					child: FloatingActionButton.extended(
+						onPressed: () {
+							final model = Provider.of<Model>(context, listen: false);
+							final settings = Provider.of<Settings>(context, listen: false);
+							final count = model.advance(settings.advanceSize);
+							ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+								content: Text(
+									'Added $count characters',
+									style: Theme.of(context).textTheme.bodyMedium?.apply(
+										color: Theme.of(context).colorScheme.onInverseSurface
+									)
+								),
+								duration: const Duration(seconds: 1)
+							));
+						},
+						label: const Text('Advance'),
+						icon: const Icon(Icons.add)
+					)
+				),
 				//Retreat
-				Container(margin: const EdgeInsets.only(bottom: 8), child: FloatingActionButton.extended(
-					onPressed: () {
-						final model = Provider.of<Model>(context, listen: false);
-						final settings = Provider.of<Settings>(context, listen: false);
-						final count = model.retreat(settings.advanceSize);
-						ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-							content: Text(
-								'Removed $count characters',
-								style: Theme.of(context).textTheme.bodyMedium?.apply(
-									color: Theme.of(context).colorScheme.onInverseSurface
-								)
-							),
-							duration: const Duration(seconds: 1)
-						));
-					},
-					label: const Text('Withdraw'),
-					icon: const Icon(Icons.remove)
-				)),
+				if (_flashcardType == FlashcardType.character) Container(
+					margin: const EdgeInsets.only(bottom: 8),
+					child: FloatingActionButton.extended(
+						onPressed: () {
+							final model = Provider.of<Model>(context, listen: false);
+							final settings = Provider.of<Settings>(context, listen: false);
+							final count = model.retreat(settings.advanceSize);
+							ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+								content: Text(
+									'Removed $count characters',
+									style: Theme.of(context).textTheme.bodyMedium?.apply(
+										color: Theme.of(context).colorScheme.onInverseSurface
+									)
+								),
+								duration: const Duration(seconds: 1)
+							));
+						},
+						label: const Text('Withdraw'),
+						icon: const Icon(Icons.remove)
+					)
+				),
 				//Jump
 				Container(margin: const EdgeInsets.only(bottom: 8), child: FloatingActionButton.extended(
 					onPressed: () => showDialog(
