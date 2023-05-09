@@ -80,6 +80,7 @@ class Model extends ChangeNotifier {
 	}
 	UnmodifiableListView<Flashcard> get chars => UnmodifiableListView(_chars);
 	UnmodifiableListView<Flashcard> get words => UnmodifiableListView(_words);
+	int get knownChars => _knownChars;
 	UnmodifiableListView<Flashcard> get knownWords => UnmodifiableListView(_knownWords);
 	void update(Flashcard flashcard) {
 		final String table;

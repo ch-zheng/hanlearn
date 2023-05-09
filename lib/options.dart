@@ -20,6 +20,7 @@ class SettingsPage extends StatelessWidget {
 					TextField(
 						controller: _batchSizeEditor,
 						keyboardType: TextInputType.number,
+						textInputAction: TextInputAction.done,
 						decoration: const InputDecoration(
 							icon: Icon(Icons.horizontal_split),
 							labelText: 'Batch size',
@@ -69,6 +70,7 @@ class SettingsPage extends StatelessWidget {
 					TextField(
 						controller: _advanceSizeEditor,
 						keyboardType: TextInputType.number,
+						textInputAction: TextInputAction.done,
 						decoration: const InputDecoration(
 							icon: Icon(Icons.arrow_forward),
 							labelText: 'Advancement size',

@@ -4,6 +4,7 @@ import 'util.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show FilteringTextInputFormatter;
 import 'package:provider/provider.dart';
+import 'dart:math';
 
 class VocabPage extends StatelessWidget {
 	const VocabPage({super.key});
@@ -28,39 +29,30 @@ class VocabPage extends StatelessWidget {
 class VocabTab extends StatelessWidget {
 	final FlashcardType _flashcardType;
 	final _scrollController = ScrollController();
-	final _textController = TextEditingController();
 	VocabTab(this._flashcardType, {super.key});
 	@override
 	Widget build(BuildContext context) {
 		return Stack(children: [
-			Column(children: [
-				//List controls
-				Padding(
-					padding: const EdgeInsets.symmetric(horizontal: 16),
-					child: Row(children: [
-						Expanded(flex: 3, child: TextField(
-							controller: _textController,
-							keyboardType: TextInputType.number,
-							decoration: const InputDecoration(labelText: 'Offset'),
-							maxLength: 4,
-							inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-						)),
-						Expanded(child: TextButton(
-							onPressed: () => _scrollController.animateTo(
-								65 * double.parse(_textController.text),
-								duration: const Duration(seconds: 1),
-								curve: Curves.decelerate
-							),
-							child: const Text('Go')
-						))
-					])
+			Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+				Container(
+					padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+					child: Consumer<Model>(
+						builder: (context, model, child) => Text(
+							_flashcardType == FlashcardType.character ?
+								'${model.knownChars} characters active'
+								: '${model.knownWords.length} words active',
+							style: Theme.of(context).textTheme.bodyMedium
+						)
+					)
 				),
+				const Divider(height: 1, thickness: 1),
 				//Vocabulary list
 				Expanded(child: VocabList(_flashcardType, controller: _scrollController)),
 			]),
 			//Floating action buttons
-			if (_flashcardType == FlashcardType.character) Positioned(right: 8, bottom: 8, child: Column(children: [
-				FloatingActionButton.extended(
+			Positioned(right: 8, bottom: 0, child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+				//Advance
+				Container(margin: const EdgeInsets.only(bottom: 8), child: FloatingActionButton.extended(
 					onPressed: () {
 						final model = Provider.of<Model>(context, listen: false);
 						final settings = Provider.of<Settings>(context, listen: false);
@@ -77,9 +69,9 @@ class VocabTab extends StatelessWidget {
 					},
 					label: const Text('Advance'),
 					icon: const Icon(Icons.add)
-				),
-				const SizedBox(height: 8),
-				FloatingActionButton.extended(
+				)),
+				//Retreat
+				Container(margin: const EdgeInsets.only(bottom: 8), child: FloatingActionButton.extended(
 					onPressed: () {
 						final model = Provider.of<Model>(context, listen: false);
 						final settings = Provider.of<Settings>(context, listen: false);
@@ -96,8 +88,16 @@ class VocabTab extends StatelessWidget {
 					},
 					label: const Text('Withdraw'),
 					icon: const Icon(Icons.remove)
-				),
-				const SizedBox(height: 8),
+				)),
+				//Jump
+				Container(margin: const EdgeInsets.only(bottom: 8), child: FloatingActionButton.extended(
+					onPressed: () => showDialog(
+						context: context,
+						builder: (context) => _JumpDialog(_scrollController)
+					),
+					label: const Text('Jump'),
+					icon: const Icon(Icons.arrow_forward)
+				)),
 				/*
 				FloatingActionButton.extended(
 					onPressed: () => 0,
@@ -108,6 +108,46 @@ class VocabTab extends StatelessWidget {
 			]))
 		]);
 	}
+}
+
+class _JumpDialog extends StatelessWidget {
+	final ScrollController scrollController;
+	final _textController = TextEditingController();
+	_JumpDialog(this.scrollController);
+	@override
+	Widget build(BuildContext context) => AlertDialog(
+		content: TextField(
+			controller: _textController,
+			keyboardType: TextInputType.number,
+			textInputAction: TextInputAction.done,
+			decoration: const InputDecoration(
+				icon: Icon(Icons.arrow_forward),
+				labelText: 'Position'
+			),
+			inputFormatters: [FilteringTextInputFormatter.digitsOnly]
+		),
+		actions: [
+			TextButton(
+				onPressed: () => Navigator.pop(context),
+				child: const Text('Cancel')
+			),
+			TextButton(
+				onPressed: () {
+					var position = double.tryParse(_textController.text);
+					if (position != null) {
+						position = max(position - 1, 0);
+						scrollController.animateTo(
+							65 * position,
+							duration: const Duration(seconds: 1),
+							curve: Curves.decelerate
+						);
+					}
+					Navigator.pop(context);
+				},
+				child: const Text('Go')
+			)
+		]
+	);
 }
 
 class VocabList extends StatelessWidget {

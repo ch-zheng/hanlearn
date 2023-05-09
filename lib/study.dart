@@ -93,27 +93,24 @@ class _StudyPageState extends State<StudyPage>
 			);
 			goodButton = ElevatedButton.icon(
 				onPressed: () => setState(() {
-					final int streak;
 					switch (_streaks[_flashcardIndex]) {
 						case _StreakStatus.neutral:
 						case _StreakStatus.bad:
 							_streaks[_flashcardIndex] = _StreakStatus.good;
-							streak = flashcard.streak + 1;
+							ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+								content: Text(
+									'Streak incremented to ${flashcard.streak + 1}',
+									style: Theme.of(context).textTheme.bodyMedium?.apply(
+										color: Theme.of(context).colorScheme.onInverseSurface
+									)
+								),
+								duration: const Duration(milliseconds: 500)
+							));
 							break;
 						case _StreakStatus.good:
 							_streaks[_flashcardIndex] = _StreakStatus.neutral;
-							streak = flashcard.streak;
 							break;
 					}
-					ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-						content: Text(
-							'Streak set to $streak.',
-							style: Theme.of(context).textTheme.bodyMedium?.apply(
-								color: Theme.of(context).colorScheme.onInverseSurface
-							)
-						),
-						duration: const Duration(milliseconds: 500)
-					));
 				}),
 				style: _streaks[_flashcardIndex] == _StreakStatus.good ?
 					ElevatedButton.styleFrom(
@@ -125,27 +122,24 @@ class _StudyPageState extends State<StudyPage>
 			);
 			badButton = ElevatedButton.icon(
 				onPressed: () => setState(() {
-					final int streak;
 					switch (_streaks[_flashcardIndex]) {
 						case _StreakStatus.neutral:
 						case _StreakStatus.good:
 							_streaks[_flashcardIndex] = _StreakStatus.bad;
-							streak = 0;
+							ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+								content: Text(
+									'Streak reset to 0',
+									style: Theme.of(context).textTheme.bodyMedium?.apply(
+										color: Theme.of(context).colorScheme.onInverseSurface
+									)
+								),
+								duration: const Duration(milliseconds: 500)
+							));
 							break;
 						case _StreakStatus.bad:
 							_streaks[_flashcardIndex] = _StreakStatus.neutral;
-							streak = flashcard.streak;
 							break;
 					}
-					ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-						content: Text(
-							'Streak set to $streak.',
-							style: Theme.of(context).textTheme.bodyMedium?.apply(
-								color: Theme.of(context).colorScheme.onInverseSurface
-							)
-						),
-						duration: const Duration(milliseconds: 500)
-					));
 				}),
 				style: _streaks[_flashcardIndex] == _StreakStatus.bad ?
 					ElevatedButton.styleFrom(

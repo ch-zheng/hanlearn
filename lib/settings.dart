@@ -11,7 +11,7 @@ class Settings extends ChangeNotifier {
 	}
 	int get batchSize => _prefs.getInt('batchSize') as int;
 	set batchSize(int value) {
-		assert(value > 0);
+		assert(value >= 0);
 		_prefs.setInt('batchSize', value);
 		notifyListeners();
 	}
@@ -30,7 +30,7 @@ class Settings extends ChangeNotifier {
 	}
 	int get advanceSize => _prefs.getInt('advanceSize') as int;
 	set advanceSize(int value) {
-		assert(value > 0);
+		assert(value >= 0);
 		_prefs.setInt('advanceSize', value);
 		notifyListeners();
 	}
