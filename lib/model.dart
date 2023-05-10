@@ -235,7 +235,7 @@ class Model extends ChangeNotifier {
 		//Create SQL database
 		final db = await openDatabase(
 			'hanlearn.db',
-			version: 3,
+			version: 2,
 			onCreate: (Database db, int version) async {
 				//Define tables
 				db.execute(

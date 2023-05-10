@@ -81,11 +81,11 @@ class _StudyPageState extends State<StudyPage>
 					itemBuilder: (context, index) {
 						return Center(child: Padding (
 							padding: const EdgeInsets.all(32),
-							child: Theme(data: ThemeData.dark(useMaterial3: true), child: _Flashcard(
+							child: _Flashcard(
 								key: ValueKey(flashcard.item),
 								flashcard,
 								shown: index == _flashcardIndex && _flashcardShown
-							))
+							)
 						));
 					},
 					itemCount: _flashcards.length

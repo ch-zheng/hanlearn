@@ -165,6 +165,7 @@ class VocabList extends StatelessWidget {
 		final model = Provider.of<Model>(context);
 		final deck = _flashcardType == FlashcardType.character ? model.chars : model.knownWords;
 		return ListView.separated(
+			key: PageStorageKey(_flashcardType),
 			controller: controller,
 			itemBuilder: (context, index) {
 				final flashcard = deck[index];
