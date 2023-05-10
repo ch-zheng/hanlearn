@@ -206,6 +206,38 @@ class Model extends ChangeNotifier {
 		notifyListeners();
 		return result;
 	}
+	void setCharPrefix(int count, int level) {
+		assert(count >= 0);
+		assert(level >= 1);
+		assert(level <= 4);
+		count = min(count, _knownChars);
+		for (var i = 0; i < count; ++i) {
+			_chars[i].level = level;
+		}
+		_db.update(
+			'characters',
+			{'level': level},
+			where: 'id < ?',
+			whereArgs: [count]
+		);
+		notifyListeners();
+	}
+	void setWordPrefix(int count, int level) {
+		assert(count >= 0);
+		assert(level >= 1);
+		assert(level <= 4);
+		count = min(count, _knownWords.length);
+		for (var i = 0; i < count; ++i) {
+			_words[i].level = level;
+		}
+		_db.update(
+			'words',
+			{'level': level},
+			where: 'id < ?',
+			whereArgs: [count]
+		);
+		notifyListeners();
+	}
 	UnmodifiableListView<Flashcard> draw(int count, {int maxLevel = 4}) {
 		assert(count >= 0);
 		assert(maxLevel > 0);

@@ -50,7 +50,7 @@ class VocabTab extends StatelessWidget {
 				Expanded(child: VocabList(_flashcardType, controller: _scrollController)),
 			]),
 			//Floating action buttons
-			Positioned(right: 8, bottom: 0, child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+			Positioned(right: 8, bottom: 8, child: ExpandableFab([
 				//Advance
 				if (_flashcardType == FlashcardType.character) Container(
 					margin: const EdgeInsets.only(bottom: 8),
@@ -69,7 +69,7 @@ class VocabTab extends StatelessWidget {
 								duration: const Duration(seconds: 1)
 							));
 						},
-						label: const Text('Advance'),
+						label: const Text('Add'),
 						icon: const Icon(Icons.add)
 					)
 				),
@@ -91,7 +91,7 @@ class VocabTab extends StatelessWidget {
 								duration: const Duration(seconds: 1)
 							));
 						},
-						label: const Text('Withdraw'),
+						label: const Text('Remove'),
 						icon: const Icon(Icons.remove)
 					)
 				),
@@ -104,13 +104,15 @@ class VocabTab extends StatelessWidget {
 					label: const Text('Jump'),
 					icon: const Icon(Icons.arrow_forward)
 				)),
-				/*
-				FloatingActionButton.extended(
-					onPressed: () => 0,
+				//Edit
+				Container(margin: const EdgeInsets.only(bottom: 8), child: FloatingActionButton.extended(
+					onPressed: () => showDialog(
+						context: context,
+						builder: (context) => _EditDialog(_flashcardType)
+					),
 					label: const Text('Edit'),
 					icon: const Icon(Icons.segment)
-				)
-				*/
+				))
 			]))
 		]);
 	}
@@ -122,14 +124,14 @@ class _JumpDialog extends StatelessWidget {
 	_JumpDialog(this.scrollController);
 	@override
 	Widget build(BuildContext context) => AlertDialog(
+		title: const Text('Jump'),
 		content: TextField(
 			controller: _textController,
-			keyboardType: TextInputType.number,
-			textInputAction: TextInputAction.done,
 			decoration: const InputDecoration(
-				icon: Icon(Icons.arrow_forward),
 				labelText: 'Position'
 			),
+			keyboardType: TextInputType.number,
+			textInputAction: TextInputAction.done,
 			inputFormatters: [FilteringTextInputFormatter.digitsOnly]
 		),
 		actions: [
@@ -139,11 +141,10 @@ class _JumpDialog extends StatelessWidget {
 			),
 			TextButton(
 				onPressed: () {
-					var position = double.tryParse(_textController.text);
+					final position = double.tryParse(_textController.text);
 					if (position != null) {
-						position = max(position - 1, 0);
 						scrollController.animateTo(
-							65 * position,
+							65 * max(position - 1, 0),
 							duration: const Duration(seconds: 1),
 							curve: Curves.decelerate
 						);
@@ -151,6 +152,65 @@ class _JumpDialog extends StatelessWidget {
 					Navigator.pop(context);
 				},
 				child: const Text('Go')
+			)
+		]
+	);
+}
+
+class _EditDialog extends StatefulWidget {
+	final FlashcardType _flashcardType;
+	final _textController = TextEditingController();
+	_EditDialog(this._flashcardType);
+	@override
+	State<_EditDialog> createState() => _EditDialogState();
+}
+
+class _EditDialogState extends State<_EditDialog> {
+	int _sliderValue = 1;
+	@override
+	Widget build(BuildContext context) => AlertDialog(
+		title: const Text('Edit'),
+		content: Column(mainAxisSize: MainAxisSize.min, children: [
+			TextField(
+				controller: widget._textController,
+				decoration: const InputDecoration(
+					labelText: 'Position'
+				),
+				keyboardType: TextInputType.number,
+				textInputAction: TextInputAction.done,
+				inputFormatters: [FilteringTextInputFormatter.digitsOnly]
+			),
+			Slider(
+				value: _sliderValue.toDouble(),
+				onChanged: (value) => setState(() => _sliderValue = max(value.toInt(), 1)),
+				min: 0,
+				max: 4,
+				divisions: 4,
+				label: _sliderValue.toString()
+			)
+		]),
+		actions: [
+			TextButton(
+				onPressed: () => Navigator.pop(context),
+				child: const Text('Cancel')
+			),
+			TextButton(
+				onPressed: () {
+					final count = double.tryParse(widget._textController.text)?.toInt();
+					if (count != null) {
+						final model = Provider.of<Model>(context, listen: false);
+						switch (widget._flashcardType) {
+							case FlashcardType.character:
+								model.setCharPrefix(count, _sliderValue);
+								break;
+							case FlashcardType.word:
+								model.setWordPrefix(count, _sliderValue);
+								break;
+						}
+					}
+					Navigator.pop(context);
+				},
+				child: const Text('Edit')
 			)
 		]
 	);

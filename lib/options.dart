@@ -2,6 +2,7 @@ import 'settings.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show FilteringTextInputFormatter;
 import 'package:provider/provider.dart';
+import 'dart:math';
 
 class SettingsPage extends StatelessWidget {
 	final _batchSizeEditor = TextEditingController();
@@ -36,10 +37,10 @@ class SettingsPage extends StatelessWidget {
 					Text('Maximum level', style: Theme.of(context).textTheme.titleMedium),
 					Slider(
 						value: settings.maxLevel.toDouble(),
-						onChanged: (value) => settings.maxLevel = value.toInt(),
-						min: 1,
+						onChanged: (value) => settings.maxLevel = max(value.toInt(), 1),
+						min: 0,
 						max: 4,
-						divisions: 3,
+						divisions: 4,
 						label: settings.maxLevel.toString()
 					),
 					const Divider(),
