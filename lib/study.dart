@@ -201,9 +201,10 @@ class _StudyPageState extends State<StudyPage>
 									0,
 									duration: Duration(milliseconds: min(100 * _flashcardIndex, 500)),
 									curve: Curves.decelerate
-								);
+								).then((value) => setState(() => _nextBatch()));
+							} else {
+								_nextBatch();
 							}
-							_nextBatch();
 						}),
 						child: const Text('Next Batch')
 					)
@@ -225,7 +226,8 @@ class _Flashcard extends StatelessWidget {
 		final Widget contents = !shown ? Text(
 			_flashcard.item,
 			style: Theme.of(context).textTheme.displayLarge?.apply(
-				color: Theme.of(context).colorScheme.onInverseSurface
+				//color: Theme.of(context).colorScheme.onInverseSurface
+				color: Theme.of(context).colorScheme.primary
 			),
 			textAlign: TextAlign.center
 		) : Column(
@@ -234,7 +236,8 @@ class _Flashcard extends StatelessWidget {
 				Text(
 					_flashcard.item,
 					style: Theme.of(context).textTheme.displayLarge?.apply(
-						color: Theme.of(context).colorScheme.onInverseSurface
+						//color: Theme.of(context).colorScheme.onInverseSurface
+						color: Theme.of(context).colorScheme.primary
 					),
 					textAlign: TextAlign.center
 				),
@@ -242,7 +245,7 @@ class _Flashcard extends StatelessWidget {
 				Text(
 					_flashcard.prettyPinyin,
 					style: Theme.of(context).textTheme.headlineLarge?.apply(
-						color: Theme.of(context).colorScheme.onInverseSurface
+						//color: Theme.of(context).colorScheme.onInverseSurface
 					),
 					textAlign: TextAlign.center
 				),
@@ -251,14 +254,14 @@ class _Flashcard extends StatelessWidget {
 					prettyDefinition,
 					style: Theme.of(context).textTheme.bodyLarge?.apply(
 						fontSizeFactor: max(2 - 0.04 * prettyDefinition.length, 1),
-						color: Theme.of(context).colorScheme.onInverseSurface
+						//color: Theme.of(context).colorScheme.onInverseSurface
 					),
 					textAlign: TextAlign.center
 				)
 			]
 		);
 		return Card(
-			color: Theme.of(context).colorScheme.inverseSurface,
+			//color: Theme.of(context).colorScheme.inverseSurface,
 			child: Center(child: SingleChildScrollView(child: Padding(
 				padding: const EdgeInsets.all(8),
 				child: PageTransitionSwitcher(

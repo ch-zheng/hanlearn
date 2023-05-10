@@ -36,13 +36,16 @@ class VocabTab extends StatelessWidget {
 			Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
 				Container(
 					padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-					child: Consumer<Model>(
-						builder: (context, model, child) => Text(
-							_flashcardType == FlashcardType.character ?
-								'${model.knownChars} characters active'
-								: '${model.knownWords.length} words active',
-							style: Theme.of(context).textTheme.bodyMedium
-						)
+					child: Consumer2<Model, Settings>(
+						builder: (context, model, settings, child) {
+							final maxLevel = settings.maxLevel;
+							return Text(
+								_flashcardType == FlashcardType.character ?
+									'${model.activeCharCount(maxLevel)} out of ${model.knownChars} characters active'
+									: '${model.activeWordCount(maxLevel)} out of ${model.knownWords.length} words active',
+								style: Theme.of(context).textTheme.bodyMedium
+							);
+						}
 					)
 				),
 				const Divider(height: 1, thickness: 1),
@@ -229,6 +232,7 @@ class VocabList extends StatelessWidget {
 			controller: controller,
 			itemBuilder: (context, index) {
 				final flashcard = deck[index];
+				final enabled = flashcard.level > 0;
 				return SizedBox(height: 64, child: ListTile(
 					key: ValueKey(index),
 					leading: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -237,26 +241,33 @@ class VocabList extends StatelessWidget {
 						Text(
 							flashcard.item,
 							style: Theme.of(context).textTheme.titleLarge?.apply(
-								color: Theme.of(context).colorScheme.primary,
+								color: enabled ? Theme.of(context).colorScheme.primary
+									: Theme.of(context).colorScheme.secondary,
 								fontWeightDelta: 1
 							)
 						)
 					]),
 					title: Text(
 						flashcard.prettyPinyin,
-						style: Theme.of(context).textTheme.labelLarge
+						style: Theme.of(context).textTheme.labelLarge?.apply(
+							color: enabled ? null : Theme.of(context).disabledColor
+						)
 					),
 					subtitle: Text(
 						flashcard.prettyDefinition,
-						style: Theme.of(context).textTheme.bodyMedium,
+						style: Theme.of(context).textTheme.bodyMedium?.apply(
+							color: enabled ? null : Theme.of(context).disabledColor
+						),
 						overflow: TextOverflow.ellipsis
 					),
-					trailing: SizedBox(
+					trailing: Visibility.maintain(visible: enabled, child: SizedBox(
 						width: 64,
-						child: LinearProgressIndicator(value: flashcard.level.toDouble() / 4.0)
-					),
-					enabled: flashcard.level > 0,
-					onTap: flashcard.level > 0 ? () {
+						child: LinearProgressIndicator(
+							value: enabled ? (flashcard.level.toDouble() - 1) / 3.0 : 0
+						)
+					)),
+					enabled: enabled,
+					onTap: enabled ? () {
 						final sheetRef = Provider.of<Reference<PersistentBottomSheetController>>(context, listen: false);
 						final closed = sheetRef.value?.closed ?? Future.value(null);
 						closed.then((_) => sheetRef.value = Scaffold.of(context)

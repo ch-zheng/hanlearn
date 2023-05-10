@@ -83,6 +83,21 @@ class Model extends ChangeNotifier {
 	UnmodifiableListView<Flashcard> get words => UnmodifiableListView(_words);
 	int get knownChars => _knownChars;
 	UnmodifiableListView<Flashcard> get knownWords => UnmodifiableListView(_knownWords);
+	int activeCharCount(int maxLevel) {
+		int result = 0;
+		for (var i = 0; i < _knownChars; ++i) {
+			final flashcard = _chars[i];
+			result += flashcard.level <= maxLevel ? 1 : 0;
+		}
+		return result;
+	}
+	int activeWordCount(int maxLevel) {
+		int result = 0;
+		for (final flashcard in _knownWords) {
+			result += flashcard.level <= maxLevel ? 1 : 0;
+		}
+		return result;
+	}
 	void update(Flashcard flashcard) {
 		final String table;
 		switch (flashcard.type) {
