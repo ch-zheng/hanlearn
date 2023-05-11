@@ -40,7 +40,7 @@ class SettingsPage extends StatelessWidget {
 						min: 1,
 						max: 4,
 						divisions: 3,
-						label: settings.maxLevel.toString()
+						label: (settings.maxLevel - 1).toString()
 					),
 					const Divider(),
 					//Flashcard types

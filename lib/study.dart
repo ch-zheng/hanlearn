@@ -159,7 +159,7 @@ class _StudyPageState extends State<StudyPage>
 				min: 1,
 				max: 4,
 				divisions: 3,
-				label: flashcard.level.toString()
+				label: (flashcard.level - 1).toString()
 			);
 		} else {
 			deck = Center(child: Text(

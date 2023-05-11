@@ -185,11 +185,11 @@ class _EditDialogState extends State<_EditDialog> {
 			),
 			Slider(
 				value: _sliderValue.toDouble(),
-				onChanged: (value) => setState(() => _sliderValue = max(value.toInt(), 1)),
-				min: 0,
+				onChanged: (value) => setState(() => _sliderValue = value.toInt()),
+				min: 1,
 				max: 4,
-				divisions: 4,
-				label: _sliderValue.toString()
+				divisions: 3,
+				label: (_sliderValue - 1).toString()
 			)
 		]),
 		actions: [
@@ -326,7 +326,7 @@ class _VocabSheet extends StatelessWidget {
 								min: 1,
 								max: 4,
 								divisions: 3,
-								label: _flashcard.level.toString()
+								label: (_flashcard.level - 1).toString()
 							)
 						)
 					]),
