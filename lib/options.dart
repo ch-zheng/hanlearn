@@ -6,14 +6,16 @@ import 'package:provider/provider.dart';
 class SettingsPage extends StatelessWidget {
 	final _batchSizeEditor = TextEditingController();
 	final _advanceSizeEditor = TextEditingController();
+	final _thresholdEditor = TextEditingController();
 	SettingsPage({super.key});
 	@override
 	Widget build(BuildContext context) => Consumer<Settings>(
 		builder: (context, settings, child) {
 			_batchSizeEditor.value = TextEditingValue(text: settings.batchSize.toString());
 			_advanceSizeEditor.value = TextEditingValue(text: settings.advanceSize.toString());
+			_thresholdEditor.value = TextEditingValue(text: settings.threshold.toString());
 			return SingleChildScrollView(child: Padding(
-				padding: const EdgeInsets.symmetric(horizontal: 16),
+				padding: const EdgeInsets.all(16),
 				child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
 					//Batch size
 					Text('Batch size', style: Theme.of(context).textTheme.titleMedium),
@@ -81,6 +83,34 @@ class SettingsPage extends StatelessWidget {
 						inputFormatters: [FilteringTextInputFormatter.digitsOnly],
 						onSubmitted: (input) => settings.advanceSize
 							= int.tryParse(input) ?? settings.advanceSize
+					),
+					const Divider(),
+					//Automatic leveling
+					Row(children: [
+						Text('Automatic leveling', style: Theme.of(context).textTheme.titleMedium),
+						Padding(
+							padding: const EdgeInsets.symmetric(horizontal: 16),
+							child:  Switch(
+								value: settings.autoLevel,
+								onChanged: (value) => settings.autoLevel = value
+							)
+						)
+					]),
+					//Automatic leveling threshold
+					TextField(
+						controller: _thresholdEditor,
+						keyboardType: TextInputType.number,
+						textInputAction: TextInputAction.done,
+						decoration: const InputDecoration(
+							icon: Icon(Icons.fence),
+							labelText: 'Threshold',
+							helperText: 'Required streak per level'
+						),
+						maxLength: 2,
+						inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+						onSubmitted: (input) => settings.threshold
+							= int.tryParse(input) ?? settings.threshold,
+						enabled: settings.autoLevel
 					),
 				])
 			));

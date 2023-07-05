@@ -1,4 +1,4 @@
-package com.example.hanlearn
+package com.chzheng.hanlearn
 
 import io.flutter.embedding.android.FlutterActivity
 

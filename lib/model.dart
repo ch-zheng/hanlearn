@@ -65,14 +65,14 @@ class Model extends ChangeNotifier {
 	final List<Flashcard> _chars;
 	final List<Flashcard> _words;
 	var _knownChars = 0;
-	final _knownWords = <Flashcard>[];
+	var _knownWords = 0;
 	final _knownRunes = Set<int>.of('\u2026'.runes);
 	Model(this._db, this._chars, this._words) {
 		while (_knownChars < _chars.length && _chars[_knownChars].level > 0) {
 			++_knownChars;
 		}
-		for (final word in _words) {
-			if (word.level > 0) _knownWords.add(word);
+		while (_knownWords < _words.length && _words[_knownWords].level > 0) {
+			++_knownWords;
 		}
 		for (var i = 0; i < _knownChars; ++i) {
 			final flashcard = _chars[i];
@@ -82,18 +82,21 @@ class Model extends ChangeNotifier {
 	UnmodifiableListView<Flashcard> get chars => UnmodifiableListView(_chars);
 	UnmodifiableListView<Flashcard> get words => UnmodifiableListView(_words);
 	int get knownChars => _knownChars;
-	UnmodifiableListView<Flashcard> get knownWords => UnmodifiableListView(_knownWords);
+	int get knownWords => _knownWords;
+	//How many character flashcards are eligible to be drawn
 	int activeCharCount(int maxLevel) {
-		int result = 0;
+		int active = 0;
 		for (var i = 0; i < _knownChars; ++i) {
 			final flashcard = _chars[i];
-			result += flashcard.level <= maxLevel ? 1 : 0;
+			active += flashcard.level <= maxLevel ? 1 : 0;
 		}
-		return result;
+		return active;
 	}
+	//How many word flashcards are eligible to be drawn
 	int activeWordCount(int maxLevel) {
 		int result = 0;
-		for (final flashcard in _knownWords) {
+		for (var i = 0; i < _knownWords; ++i) {
+			final flashcard = _words[i];
 			result += flashcard.level <= maxLevel ? 1 : 0;
 		}
 		return result;
@@ -141,6 +144,7 @@ class Model extends ChangeNotifier {
 		batch.commit(noResult: true);
 		notifyListeners();
 	}
+	//Add new characters to study
 	int advance(int count) {
 		final batch = _db.batch();
 		//Add characters
@@ -159,23 +163,26 @@ class Model extends ChangeNotifier {
 			++_knownChars;
 		}
 		//Add words
-		for (final word in _words) {
-			if (word.level == 0 && _knownRunes.containsAll(word.item.runes)) {
-				word.level = 1;
+		for (var i = _knownWords; i < _words.length; ++i) {
+			final flashcard = _words[i];
+			if (_knownRunes.containsAll(flashcard.item.runes)) {
+				flashcard.level = 1;
 				batch.update(
 					'words',
-					{'level': word.level},
+					{'level': flashcard.level},
 					where: 'id = ?',
-					whereArgs: [word.id]
+					whereArgs: [flashcard.id]
 				);
-				_knownWords.add(word);
+				++_knownWords;
+			} else {
+				break;
 			}
 		}
 		batch.commit(noResult: true);
-		_knownWords.sort((a, b) => a.id - b.id);
 		notifyListeners();
 		return result;
 	}
+	//Remove characters from study
 	int retreat(int count) {
 		final batch = _db.batch();
 		//Remove characters
@@ -198,12 +205,9 @@ class Model extends ChangeNotifier {
 			_knownRunes.removeAll(flashcard.item.runes);
 		}
 		//Remove words
-		final formerlyKnown = List.unmodifiable(_knownWords);
-		_knownWords.clear();
-		for (final flashcard in formerlyKnown) {
-			if (_knownRunes.containsAll(flashcard.item.runes)) {
-				_knownWords.add(flashcard);
-			} else {
+		while (_knownWords > 0) {
+			final flashcard = _words[_knownWords];
+			if (!_knownRunes.containsAll(flashcard.item.runes)) {
 				flashcard.level = 0;
 				flashcard.streak = 0;
 				batch.update(
@@ -215,41 +219,44 @@ class Model extends ChangeNotifier {
 					where: 'id = ?',
 					whereArgs: [flashcard.id]
 				);
+				--_knownWords;
+			} else {
+				break;
 			}
 		}
 		batch.commit(noResult: true);
 		notifyListeners();
 		return result;
 	}
-	void setCharPrefix(int count, int level) {
-		assert(count >= 0);
-		assert(level >= 1);
-		assert(level <= 4);
-		count = min(count, _knownChars);
-		for (var i = 0; i < count; ++i) {
+	void editCharRange(int start, int end, int level) {
+		assert(start >= 0);
+		assert(start < end);
+		assert(end <= _knownChars);
+		assert(level > 0 && level <= 4);
+		for (var i = start; i < end; ++i) {
 			_chars[i].level = level;
 		}
 		_db.update(
 			'characters',
 			{'level': level},
-			where: 'id < ?',
-			whereArgs: [count]
+			where: 'id >= ? AND id < ?',
+			whereArgs: [start, end]
 		);
 		notifyListeners();
 	}
-	void setWordPrefix(int count, int level) {
-		assert(count >= 0);
-		assert(level >= 1);
-		assert(level <= 4);
-		count = min(count, _knownWords.length);
-		for (var i = 0; i < count; ++i) {
+	void editWordRange(int start, int end, int level) {
+		assert(start >= 0);
+		assert(start < end);
+		assert(end <= _knownWords);
+		assert(level > 0 && level <= 4);
+		for (var i = start; i < end; ++i) {
 			_words[i].level = level;
 		}
 		_db.update(
 			'words',
 			{'level': level},
-			where: 'id < ?',
-			whereArgs: [count]
+			where: 'id >= ? AND id < ?',
+			whereArgs: [start, end]
 		);
 		notifyListeners();
 	}
@@ -257,9 +264,10 @@ class Model extends ChangeNotifier {
 		assert(count >= 0);
 		assert(maxLevel > 0);
 		assert(maxLevel <= 4);
-		final candidates = _chars.sublist(0, _knownChars);
+		final candidates = <Flashcard>[];
 		candidates
-			..insertAll(candidates.length, _knownWords)
+			..insertAll(candidates.length, _chars.sublist(0, _knownChars))
+			..insertAll(candidates.length, _words.sublist(0, _knownWords))
 			..retainWhere((item) => item.level <= maxLevel)
 			..shuffle();
 		return UnmodifiableListView(candidates.getRange(0, min(count, candidates.length)));
@@ -273,7 +281,7 @@ class Model extends ChangeNotifier {
 	}
 	UnmodifiableListView<Flashcard> drawWords(int count, {int maxLevel = 4}) {
 		assert(count >= 0);
-		final candidates = _knownWords
+		final candidates = _words.sublist(0, _knownWords)
 			..retainWhere((item) => item.level <= maxLevel)
 			..shuffle();
 		return UnmodifiableListView(candidates.getRange(0, min(count, candidates.length)));
@@ -340,6 +348,60 @@ class Model extends ChangeNotifier {
 							'word': row[0],
 							'pinyin': row[1],
 							'definition': row[2]
+						},
+						conflictAlgorithm: ConflictAlgorithm.replace
+					);
+				}
+				batch.commit(noResult: true);
+			},
+			onUpgrade: (Database db, int oldVersion, int newVersion) async {
+				//Load CSV data
+				final List<List<dynamic>> wordData = await rootBundle.loadStructuredData(
+					'assets/words.csv',
+					(text) => Future.value(const CsvToListConverter(eol: "\n").convert(text))
+				);
+				//Inflate into flashcards
+				final words = <Flashcard>[];
+				for (var i = 1; i < wordData.length; ++i) {
+					final row = wordData[i];
+					words.add(Flashcard(
+						FlashcardType.word,
+						i - 1,
+						row[0],
+						row[1],
+						row[2]
+					));
+				}
+				//Merge with existing data
+				final lookup = HashMap<String, int>();
+				for (final word in words) {
+					lookup[word.item] = word.id;
+				}
+				for (final row in await db.query('words')) {
+					final index = lookup[row['word']];
+					if (index != null) {
+						final word = words[index];
+						word.level = row['level'] as int;
+						word.streak = row['streak'] as int;
+					}
+				}
+				final last = words.lastIndexWhere((word) => word.level > 0);
+				for (var i = 0; i < last; ++i) {
+					final word = words[i];
+					word.level = max(word.level, 1);
+				}
+				//Insert words
+				final batch = db.batch();
+				for (final word in words) {
+					batch.insert(
+						'words',
+						{
+							'id': word.id,
+							'word': word.item,
+							'pinyin': word.pinyin,
+							'definition': word.definition,
+							'level': word.level,
+							'streak': word.streak
 						},
 						conflictAlgorithm: ConflictAlgorithm.replace
 					);

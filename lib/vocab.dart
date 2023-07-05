@@ -42,7 +42,7 @@ class VocabTab extends StatelessWidget {
 							return Text(
 								_flashcardType == FlashcardType.character ?
 									'${model.activeCharCount(maxLevel)} out of ${model.knownChars} characters active'
-									: '${model.activeWordCount(maxLevel)} out of ${model.knownWords.length} words active',
+									: '${model.activeWordCount(maxLevel)} out of ${model.knownWords} words active',
 								style: Theme.of(context).textTheme.bodyMedium
 							);
 						}
@@ -59,18 +59,28 @@ class VocabTab extends StatelessWidget {
 					margin: const EdgeInsets.only(bottom: 8),
 					child: FloatingActionButton.extended(
 						onPressed: () {
-							final model = Provider.of<Model>(context, listen: false);
 							final settings = Provider.of<Settings>(context, listen: false);
-							final count = model.advance(settings.advanceSize);
-							ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-								content: Text(
-									'Added $count characters',
-									style: Theme.of(context).textTheme.bodyMedium?.apply(
-										color: Theme.of(context).colorScheme.onInverseSurface
-									)
-								),
-								duration: const Duration(seconds: 1)
-							));
+							callback() {
+								final model = Provider.of<Model>(context, listen: false);
+								final count = model.advance(settings.advanceSize);
+								ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+									content: Text(
+										'Added $count characters',
+										style: Theme.of(context).textTheme.bodyMedium?.apply(
+											color: Theme.of(context).colorScheme.onInverseSurface
+										)
+									),
+									duration: const Duration(seconds: 1)
+								));
+							}
+							showDialog(
+								context: context,
+								builder: (context) => _ConfirmDialog(
+									"Advance",
+									"Add ${settings.advanceSize} characters?",
+									callback
+								)
+							);
 						},
 						label: const Text('Add'),
 						icon: const Icon(Icons.add)
@@ -81,18 +91,28 @@ class VocabTab extends StatelessWidget {
 					margin: const EdgeInsets.only(bottom: 8),
 					child: FloatingActionButton.extended(
 						onPressed: () {
-							final model = Provider.of<Model>(context, listen: false);
 							final settings = Provider.of<Settings>(context, listen: false);
-							final count = model.retreat(settings.advanceSize);
-							ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-								content: Text(
-									'Removed $count characters',
-									style: Theme.of(context).textTheme.bodyMedium?.apply(
-										color: Theme.of(context).colorScheme.onInverseSurface
-									)
-								),
-								duration: const Duration(seconds: 1)
-							));
+							callback() {
+								final model = Provider.of<Model>(context, listen: false);
+								final count = model.retreat(settings.advanceSize);
+								ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+									content: Text(
+										'Removed $count characters',
+										style: Theme.of(context).textTheme.bodyMedium?.apply(
+											color: Theme.of(context).colorScheme.onInverseSurface
+										)
+									),
+									duration: const Duration(seconds: 1)
+								));
+							}
+							showDialog(
+								context: context,
+								builder: (context) => _ConfirmDialog(
+									"Retreat",
+									"Remove ${settings.advanceSize} characters?",
+									callback
+								)
+							);
 						},
 						label: const Text('Remove'),
 						icon: const Icon(Icons.remove)
@@ -119,6 +139,31 @@ class VocabTab extends StatelessWidget {
 			]))
 		]);
 	}
+}
+
+class _ConfirmDialog extends StatelessWidget {
+	final String title;
+	final String body;
+	final VoidCallback? onPressed;
+	const _ConfirmDialog(this.title, this.body, this.onPressed);
+	@override
+	Widget build(BuildContext context) => AlertDialog(
+		title: Text(title),
+		content: Text(body, style: Theme.of(context).textTheme.bodyLarge),
+		actions: [
+			TextButton(
+				onPressed: () => Navigator.pop(context),
+				child: const Text('Cancel')
+			),
+			TextButton(
+				onPressed: () {
+					onPressed!();
+					Navigator.pop(context);
+				},
+				child: const Text('Confirm')
+			),
+		]
+	);
 }
 
 class _JumpDialog extends StatelessWidget {
@@ -162,7 +207,8 @@ class _JumpDialog extends StatelessWidget {
 
 class _EditDialog extends StatefulWidget {
 	final FlashcardType _flashcardType;
-	final _textController = TextEditingController();
+	final _startTextController = TextEditingController();
+	final _endTextController = TextEditingController();
 	_EditDialog(this._flashcardType);
 	@override
 	State<_EditDialog> createState() => _EditDialogState();
@@ -170,19 +216,38 @@ class _EditDialog extends StatefulWidget {
 
 class _EditDialogState extends State<_EditDialog> {
 	int _sliderValue = 1;
+	String? startErrorText;
+	String? endErrorText;
 	@override
 	Widget build(BuildContext context) => AlertDialog(
 		title: const Text('Edit'),
 		content: Column(mainAxisSize: MainAxisSize.min, children: [
-			TextField(
-				controller: widget._textController,
-				decoration: const InputDecoration(
-					labelText: 'Position'
-				),
-				keyboardType: TextInputType.number,
-				textInputAction: TextInputAction.done,
-				inputFormatters: [FilteringTextInputFormatter.digitsOnly]
+			Text(
+				'Set all items in the range to the same level',
+				style: Theme.of(context).textTheme.bodyLarge
 			),
+			Row(children: [
+				Expanded(child: TextField(
+					controller: widget._startTextController,
+					decoration: InputDecoration(
+						labelText: 'Start',
+						errorText: startErrorText,
+					),
+					keyboardType: TextInputType.number,
+					textInputAction: TextInputAction.done,
+					inputFormatters: [FilteringTextInputFormatter.digitsOnly]
+				)),
+				Expanded(child: TextField(
+					controller: widget._endTextController,
+					decoration: InputDecoration(
+						labelText: 'End',
+						errorText: endErrorText
+					),
+					keyboardType: TextInputType.number,
+					textInputAction: TextInputAction.done,
+					inputFormatters: [FilteringTextInputFormatter.digitsOnly]
+				))
+			]),
 			Slider(
 				value: _sliderValue.toDouble(),
 				onChanged: (value) => setState(() => _sliderValue = value.toInt()),
@@ -199,19 +264,34 @@ class _EditDialogState extends State<_EditDialog> {
 			),
 			TextButton(
 				onPressed: () {
-					final count = double.tryParse(widget._textController.text)?.toInt();
-					if (count != null) {
-						final model = Provider.of<Model>(context, listen: false);
-						switch (widget._flashcardType) {
-							case FlashcardType.character:
-								model.setCharPrefix(count, _sliderValue);
-								break;
-							case FlashcardType.word:
-								model.setWordPrefix(count, _sliderValue);
-								break;
+					final start = double.tryParse(widget._startTextController.text)?.toInt();
+					final end = double.tryParse(widget._endTextController.text)?.toInt();
+					final model = Provider.of<Model>(context, listen: false);
+					if (start != null && end != null) {
+						if (start > 0 && start <= end && end <= model.knownChars) {
+							switch (widget._flashcardType) {
+								case FlashcardType.character:
+									model.editCharRange(start - 1, end, _sliderValue);
+									break;
+								case FlashcardType.word:
+									model.editWordRange(start - 1, end, _sliderValue);
+									break;
+							}
+							Navigator.pop(context);
+						} else {
+							setState(() {
+								startErrorText = 'Invalid value';
+								endErrorText = 'Invalid value';
+							});
+						}
+					} else {
+						if (start == null) {
+							setState(() => startErrorText = 'Missing start');
+						}
+						if (end == null) {
+							setState(() => endErrorText = 'Missing end');
 						}
 					}
-					Navigator.pop(context);
 				},
 				child: const Text('Edit')
 			)
@@ -226,7 +306,7 @@ class VocabList extends StatelessWidget {
 	@override
 	Widget build(BuildContext context) {
 		final model = Provider.of<Model>(context);
-		final deck = _flashcardType == FlashcardType.character ? model.chars : model.knownWords;
+		final deck = _flashcardType == FlashcardType.character ? model.chars : model.words;
 		return ListView.separated(
 			key: PageStorageKey(_flashcardType),
 			controller: controller,

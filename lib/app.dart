@@ -45,6 +45,15 @@ class _AppState extends State<App>
 		child: MaterialApp(
 			title: 'Hanlearn',
 			theme: ThemeData.dark(useMaterial3: true),
+			/*
+			theme: ThemeData.from(
+				colorScheme: ColorScheme.fromSeed(
+					seedColor: const Color(0xFF0000FF),
+					brightness: Brightness.dark
+				),
+				useMaterial3: true
+			),
+			*/
 			home: Scaffold(
 				appBar: AppBar(title: Container(
 					margin: const EdgeInsets.symmetric(horizontal: 8),

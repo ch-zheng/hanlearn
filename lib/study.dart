@@ -23,6 +23,7 @@ class _StudyPageState extends State<StudyPage>
 	final _pageController = PageController();
 	void _nextBatch() {
 		final model = Provider.of<Model>(context, listen: false);
+		final settings = Provider.of<Settings>(context, listen: false);
 		//Update streaks
 		for (var i = 0; i < _flashcards.length; ++i) {
 			final flashcard = _flashcards[i];
@@ -30,9 +31,18 @@ class _StudyPageState extends State<StudyPage>
 			switch (streak) {
 				case _StreakStatus.good:
 					flashcard.streak += 1;
+					if (settings.autoLevel) {
+						flashcard.level = max(
+							min(flashcard.streak ~/ settings.threshold.floor() + 1, 4),
+							flashcard.level
+						);
+					}
 					break;
 				case _StreakStatus.bad:
 					flashcard.streak = 0;
+					if (settings.autoLevel) {
+						flashcard.level = 1;
+					}
 					break;
 				case _StreakStatus.neutral:
 					break;
@@ -191,7 +201,7 @@ class _StudyPageState extends State<StudyPage>
 					FractionallySizedBox(widthFactor: 1, child: goodButton),
 					FractionallySizedBox(widthFactor: 1, child: badButton),
 					Row(children: [
-						Text('Familiarity', style: Theme.of(context).textTheme.labelLarge),
+						Text('Level', style: Theme.of(context).textTheme.labelLarge),
 						Expanded(child: slider)
 					]),
 					TextButton(
