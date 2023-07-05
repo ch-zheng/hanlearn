@@ -1,11 +1,12 @@
 # Hanlearn
-
 Chinese flashcard app.
-Familiarity level for cards are self-reported by the user,
-while streaks (consecutive correct recalls without error) are automatically counted
-and can optionally be used to increment familiarity level.
-Characters are presented in order of literary frequency.
-Words are presented as the component characters are learned.
+
+## Usage
+* Familiarity level for cards are self-reported & freely managed by the user.
+* Streaks (consecutive correct recalls without error) are automatically counted
+    and can optionally be used to increment familiarity level.
+* Characters are presented in order of literary frequency.
+* Words are presented as the component characters are learned.
 
 ![Demo](demo.jpg)
 
