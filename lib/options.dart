@@ -36,6 +36,10 @@ class SettingsPage extends StatelessWidget {
 					const Divider(),
 					//Maximum level
 					Text('Maximum level', style: Theme.of(context).textTheme.titleMedium),
+					Text(
+						'Maximum level of flashcards that are selected to be shown',
+						style: Theme.of(context).textTheme.bodyMedium,
+					),
 					Slider(
 						value: settings.maxLevel.toDouble(),
 						onChanged: (value) => settings.maxLevel = value.toInt(),
@@ -52,19 +56,22 @@ class SettingsPage extends StatelessWidget {
 							value: 0,
 							groupValue: settings.flashcardType,
 							onChanged: (value) => settings.flashcardType = value ?? 0,
-							title: const Text('Characters')
+							title: const Text('Characters'),
+							visualDensity: VisualDensity.compact
 						),
 						RadioListTile<int>(
 							value: 1,
 							groupValue: settings.flashcardType,
 							onChanged: (value) => settings.flashcardType = value ?? 1,
-							title: const Text('Words')
+							title: const Text('Words'),
+							visualDensity: VisualDensity.compact
 						),
 						RadioListTile<int>(
 							value: 2,
 							groupValue: settings.flashcardType,
 							onChanged: (value) => settings.flashcardType = value ?? 2,
-							title: const Text('Characters & Words')
+							title: const Text('Characters & Words'),
+							visualDensity: VisualDensity.compact
 						),
 					]),
 					const Divider(),
@@ -96,6 +103,10 @@ class SettingsPage extends StatelessWidget {
 							)
 						)
 					]),
+					Text(
+						'Vocabulary level is automatically set according to the length of your streak for that item',
+						style: Theme.of(context).textTheme.bodyMedium,
+					),
 					//Automatic leveling threshold
 					TextField(
 						controller: _thresholdEditor,

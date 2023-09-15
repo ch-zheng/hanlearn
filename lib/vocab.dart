@@ -348,11 +348,10 @@ class VocabList extends StatelessWidget {
 					)),
 					enabled: enabled,
 					onTap: enabled ? () {
-						final sheetRef = Provider.of<Reference<PersistentBottomSheetController>>(context, listen: false);
-						final closed = sheetRef.value?.closed ?? Future.value(null);
-						closed.then((_) => sheetRef.value = Scaffold.of(context)
-							.showBottomSheet((_) => _VocabSheet(flashcard)));
-						sheetRef.value?.close();
+						showDialog(
+							context: context,
+							builder: (context) => _VocabDetail(flashcard)
+						);
 					} : null
 				));
 			},
@@ -362,72 +361,76 @@ class VocabList extends StatelessWidget {
 	}
 }
 
-class _VocabSheet extends StatelessWidget {
+class _VocabDetail extends StatelessWidget {
 	final Flashcard _flashcard;
-	const _VocabSheet(this._flashcard);
+	const _VocabDetail(this._flashcard);
 	@override
-	Widget build(BuildContext context) => FractionallySizedBox(
-		widthFactor: 1,
-		child: Padding(
-			padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 8),
-			child: Table(
-				columnWidths: const {0: IntrinsicColumnWidth()},
-				defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-				children: [
-					//Definition
-					TableRow(children: [
-						Column(children: [
-							Text(
-								_flashcard.item,
-								style: Theme.of(context).textTheme.headlineMedium?.apply(
-									color: Theme.of(context).colorScheme.primary
+	Widget build(BuildContext context) => Dialog(
+		child: Padding(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8), child: Column(
+			mainAxisSize: MainAxisSize.min,
+			children: [
+				Padding(padding: const EdgeInsets.only(bottom: 16), child: Text(
+					_flashcard.item,
+					style: Theme.of(context).textTheme.displayLarge?.apply(
+						color: Theme.of(context).colorScheme.primary
+					)
+				)),
+				Text(
+					_flashcard.prettyPinyin,
+					style: Theme.of(context).textTheme.titleLarge,
+				),
+				Text(
+					_flashcard.prettyDefinition,
+					style: Theme.of(context).textTheme.bodyLarge,
+					textAlign: TextAlign.center
+				),
+				Table(
+					columnWidths: const {0: IntrinsicColumnWidth()},
+					defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+					children: [
+						TableRow(children: [
+							Text('Level', style: Theme.of(context).textTheme.labelLarge),
+							Consumer<Model>(
+								builder: (context, model, child) => Slider(
+									value: _flashcard.level.toDouble(),
+									onChanged: (value) {
+										_flashcard.level = value.toInt();
+										model.update(_flashcard);
+									},
+									min: 1,
+									max: 4,
+									divisions: 3,
+									label: (_flashcard.level - 1).toString()
 								)
-							),
-							Text(
-								_flashcard.prettyPinyin,
-								style: Theme.of(context).textTheme.titleMedium,
 							)
 						]),
-						Text(
-							_flashcard.prettyDefinition,
-							style: Theme.of(context).textTheme.bodyLarge,
-						)
-					]),
-					//Familiarity
-					TableRow(children: [
-						Text('Familiarity', style: Theme.of(context).textTheme.labelLarge),
-						Consumer<Model>(
-							builder: (context, model, child) => Slider(
-								value: _flashcard.level.toDouble(),
-								onChanged: (value) {
-									_flashcard.level = value.toInt();
-									model.update(_flashcard);
-								},
-								min: 1,
-								max: 4,
-								divisions: 3,
-								label: (_flashcard.level - 1).toString()
+						TableRow(children: [
+							Text('Streak', style: Theme.of(context).textTheme.labelLarge),
+							Padding(
+								padding: const EdgeInsets.only(left: 16),
+								child: Row(children: [
+									Text(
+										_flashcard.streak.toString(),
+										style: Theme.of(context).textTheme.titleMedium?.apply(
+											color: Theme.of(context).colorScheme.primary
+										)
+									),
+									const Padding(
+										padding: EdgeInsets.symmetric(horizontal: 8),
+										child: Icon(Icons.done_all)
+									)
+								])
 							)
-						)
-					]),
-					//Streak
-					TableRow(children: [
-						Text('Streak', style: Theme.of(context).textTheme.labelLarge),
-						Row(children: [
-							Text(
-								_flashcard.streak.toString(),
-								style: Theme.of(context).textTheme.titleMedium?.apply(
-									color: Theme.of(context).colorScheme.primary
-								)
-							),
-							const Padding(
-								padding: EdgeInsets.symmetric(horizontal: 8),
-								child: Icon(Icons.done_all)
-							)
-						])
-					])
-				]
-			)
-		)
+						]),
+					]
+				),
+				TextButton(
+					child: const Text('Close'),
+					onPressed: () {
+						Navigator.of(context).pop();
+					}
+				)
+			]
+		))
 	);
 }

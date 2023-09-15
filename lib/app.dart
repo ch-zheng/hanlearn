@@ -2,7 +2,6 @@ import 'model.dart';
 import 'options.dart';
 import 'settings.dart';
 import 'study.dart';
-import 'util.dart';
 import 'vocab.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -22,7 +21,6 @@ class _AppState extends State<App>
 		const NavigationDestination(icon: Icon(Icons.list), label: 'Vocabulary'),
 		const NavigationDestination(icon: Icon(Icons.settings), label: 'Settings')
 	];
-	final _sheetController = Reference<PersistentBottomSheetController>();
 	int navigationIndex = 0;
 	late TabController tabController;
 	@override
@@ -39,21 +37,21 @@ class _AppState extends State<App>
 	Widget build(BuildContext context) => MultiProvider(
 		providers: [
 			ChangeNotifierProvider<Model>.value(value: widget.model),
-			ChangeNotifierProvider<Settings>.value(value: widget.settings),
-			Provider.value(value: _sheetController)
+			ChangeNotifierProvider<Settings>.value(value: widget.settings)
 		],
 		child: MaterialApp(
 			title: 'Hanlearn',
-			theme: ThemeData.dark(useMaterial3: true),
-			/*
+			//theme: ThemeData.dark(useMaterial3: true),
 			theme: ThemeData.from(
 				colorScheme: ColorScheme.fromSeed(
-					seedColor: const Color(0xFF0000FF),
+					seedColor: Colors.red,
+					background: const Color(0xFF101010),
+					surface: const Color(0xFF1C1C1C),
+					surfaceTint: Colors.transparent,
 					brightness: Brightness.dark
 				),
 				useMaterial3: true
 			),
-			*/
 			home: Scaffold(
 				appBar: AppBar(title: Container(
 					margin: const EdgeInsets.symmetric(horizontal: 8),
@@ -65,7 +63,6 @@ class _AppState extends State<App>
 					onDestinationSelected: (index) => setState(() {
 						navigationIndex = index;
 						tabController.animateTo(index);
-						_sheetController.value?.close();
 					})
 				),
 				body: TabBarView(
@@ -77,7 +74,8 @@ class _AppState extends State<App>
 						SettingsPage()
 					]
 				)
-			)
+			),
+			//debugShowCheckedModeBanner: false
 		)
 	);
 }

@@ -1,10 +1,5 @@
 import 'package:flutter/material.dart';
 
-class Reference<T> {
-	T? value;
-	Reference({this.value});
-}
-
 //StatefulWidget subclass template
 /*
 class Bar extends StatefulWidget {
@@ -24,6 +19,7 @@ class ExpandableFab extends StatefulWidget {
 	@override
 	State<ExpandableFab> createState() => _ExpandableFabState();
 }
+
 class _ExpandableFabState extends State<ExpandableFab> {
 	bool _expanded = false;
 	@override

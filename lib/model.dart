@@ -290,7 +290,7 @@ class Model extends ChangeNotifier {
 		//Create SQL database
 		final db = await openDatabase(
 			'hanlearn.db',
-			version: 2,
+			version: 1,
 			onCreate: (Database db, int version) async {
 				//Define tables
 				db.execute(
@@ -348,60 +348,6 @@ class Model extends ChangeNotifier {
 							'word': row[0],
 							'pinyin': row[1],
 							'definition': row[2]
-						},
-						conflictAlgorithm: ConflictAlgorithm.replace
-					);
-				}
-				batch.commit(noResult: true);
-			},
-			onUpgrade: (Database db, int oldVersion, int newVersion) async {
-				//Load CSV data
-				final List<List<dynamic>> wordData = await rootBundle.loadStructuredData(
-					'assets/words.csv',
-					(text) => Future.value(const CsvToListConverter(eol: "\n").convert(text))
-				);
-				//Inflate into flashcards
-				final words = <Flashcard>[];
-				for (var i = 1; i < wordData.length; ++i) {
-					final row = wordData[i];
-					words.add(Flashcard(
-						FlashcardType.word,
-						i - 1,
-						row[0],
-						row[1],
-						row[2]
-					));
-				}
-				//Merge with existing data
-				final lookup = HashMap<String, int>();
-				for (final word in words) {
-					lookup[word.item] = word.id;
-				}
-				for (final row in await db.query('words')) {
-					final index = lookup[row['word']];
-					if (index != null) {
-						final word = words[index];
-						word.level = row['level'] as int;
-						word.streak = row['streak'] as int;
-					}
-				}
-				final last = words.lastIndexWhere((word) => word.level > 0);
-				for (var i = 0; i < last; ++i) {
-					final word = words[i];
-					word.level = max(word.level, 1);
-				}
-				//Insert words
-				final batch = db.batch();
-				for (final word in words) {
-					batch.insert(
-						'words',
-						{
-							'id': word.id,
-							'word': word.item,
-							'pinyin': word.pinyin,
-							'definition': word.definition,
-							'level': word.level,
-							'streak': word.streak
 						},
 						conflictAlgorithm: ConflictAlgorithm.replace
 					);
