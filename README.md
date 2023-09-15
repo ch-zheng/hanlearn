@@ -8,10 +8,6 @@ Chinese flashcard app.
 * Characters are presented in order of literary frequency.
 * Words are presented as the component characters are learned.
 
-![Demo](demo.jpg)
-
-![Demo](demo2.jpg)
-
 ## Data sources
 1. [Jun Da: Chinese text computing](https://lingua.mtsu.edu/chinese-computing/)
 2. [CC-CEDICT Chinese Dictionary](https://cc-cedict.org)
