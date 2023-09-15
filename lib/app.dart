@@ -46,7 +46,7 @@ class _AppState extends State<App>
 				colorScheme: ColorScheme.fromSeed(
 					seedColor: Colors.red,
 					background: const Color(0xFF101010),
-					surface: const Color(0xFF1C1C1C),
+					surface: const Color(0xFF202020),
 					surfaceTint: Colors.transparent,
 					brightness: Brightness.dark
 				),
@@ -75,7 +75,7 @@ class _AppState extends State<App>
 					]
 				)
 			),
-			//debugShowCheckedModeBanner: false
+			debugShowCheckedModeBanner: false
 		)
 	);
 }

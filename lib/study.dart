@@ -236,7 +236,6 @@ class _Flashcard extends StatelessWidget {
 		final Widget contents = !shown ? Text(
 			_flashcard.item,
 			style: Theme.of(context).textTheme.displayLarge?.apply(
-				//color: Theme.of(context).colorScheme.onInverseSurface
 				color: Theme.of(context).colorScheme.primary
 			),
 			textAlign: TextAlign.center
@@ -246,25 +245,21 @@ class _Flashcard extends StatelessWidget {
 				Text(
 					_flashcard.item,
 					style: Theme.of(context).textTheme.displayLarge?.apply(
-						//color: Theme.of(context).colorScheme.onInverseSurface
 						color: Theme.of(context).colorScheme.primary
 					),
 					textAlign: TextAlign.center
 				),
-				const Divider(indent: 16, endIndent: 16),
+				const Divider(),
 				Text(
 					_flashcard.prettyPinyin,
-					style: Theme.of(context).textTheme.headlineLarge?.apply(
-						//color: Theme.of(context).colorScheme.onInverseSurface
-					),
+					style: Theme.of(context).textTheme.headlineLarge,
 					textAlign: TextAlign.center
 				),
-				const Divider(indent: 16, endIndent: 16),
+				const Divider(),
 				Text(
 					prettyDefinition,
 					style: Theme.of(context).textTheme.bodyLarge?.apply(
 						fontSizeFactor: max(2 - 0.04 * prettyDefinition.length, 1),
-						//color: Theme.of(context).colorScheme.onInverseSurface
 					),
 					textAlign: TextAlign.center
 				)
@@ -273,7 +268,7 @@ class _Flashcard extends StatelessWidget {
 		return Card(
 			//color: Theme.of(context).colorScheme.inverseSurface,
 			child: Center(child: SingleChildScrollView(child: Padding(
-				padding: const EdgeInsets.all(8),
+				padding: const EdgeInsets.all(16),
 				child: PageTransitionSwitcher(
 					duration: const Duration(milliseconds: 200),
 					reverse: !shown,
