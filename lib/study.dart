@@ -172,9 +172,37 @@ class _StudyPageState extends State<StudyPage>
 				label: (flashcard.level - 1).toString()
 			);
 		} else {
-			deck = Center(child: Text(
-				'No Flashcards',
-				style: Theme.of(context).textTheme.titleLarge
+			deck = Center(child: Padding(
+				padding: const EdgeInsets.all(32),
+				child: Column(
+					mainAxisSize: MainAxisSize.min,
+					children: [
+						const Icon(Icons.layers_clear, size: 64),
+						Text(
+							'No active flashcards',
+							style: Theme.of(context).textTheme.titleLarge
+						),
+						Text(
+							'Add items from the Vocabulary tab.',
+							style: Theme.of(context).textTheme.bodyLarge,
+							textAlign: TextAlign.center
+						),
+						RichText(
+							text: TextSpan(
+								style: Theme.of(context).textTheme.bodyLarge,
+								children: const [
+									TextSpan(text: 'Press the '),
+									TextSpan(
+										text: 'next batch',
+										style: TextStyle(fontWeight: FontWeight.bold)
+									),
+									TextSpan(text: ' button to draw a new batch of flashcards.'),
+								]
+							),
+							textAlign: TextAlign.center
+						)
+					]
+				)
 			));
 			goodButton = ElevatedButton.icon(
 				onPressed: null,
